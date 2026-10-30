@@ -305,11 +305,3 @@ These points describe the checked-in source and distinguish the implemented UI p
 | Invoice totals | PDF invoices currently calculate tax at `0`, while the template labels it “GST 18%”. Confirm the intended calculation and label before business use. |
 
 </details>
-
-The repository also tracks `.env` values and a working-key literal in `test.js`. Review committed credentials and rotate any live secrets; keep private values out of future commits. No credential values are reproduced in this README.
-
-## Maintainer and License
-
-Maintained in [`gcmt1/gcmt-vercel-webiste-vedpatel-project`](https://github.com/gcmt1/gcmt-vercel-webiste-vedpatel-project).
-
-No `LICENSE` file is currently included in this repository.
