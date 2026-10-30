@@ -55,7 +55,7 @@ The application uses **React, JavaScript, React Router, and custom CSS**, with S
 | Newsletter subscribers | Search and filter subscribers, view summary statistics, manage records, and export results to CSV. |
 | Contact enquiries | Search submissions, view message details, manage records, and export results to CSV. |
 
-The customer checkout currently offers online payment. Administration of existing cash-on-delivery records is a separate capability.
+The customer checkout implements online payment. Its availability in a deployed environment depends on the server configuration, database migration, and payment-provider validation described in [deployment preparation](docs/deployment.md). Administration of existing cash-on-delivery records is a separate capability.
 
 ## Technology
 
@@ -114,6 +114,12 @@ The repository's `.npmrc` supplies the dependency-resolution settings used by th
 
 Copy `.env.example` to `.env.local` and configure an approved development Supabase project and its public key. Use development accounts and test records for local work. Configure server-only variables only when testing checkout.
 
+```bash
+cp .env.example .env.local
+```
+
+For local API requests from `http://localhost:3000`, set `SITE_URL=http://localhost:3000` in `.env.local`. The origin must match the address used in your browser; `localhost` and `127.0.0.1` are different origins. Use the canonical HTTPS origin for a deployed environment. Gateway callback testing requires a merchant-approved, externally reachable test environment; local tests do not establish payment-provider compatibility.
+
 This repository contains application source and service configuration, rather than a complete backend provisioning package. Database provisioning, access policies, merchant settings, and payment-service configuration require a separate setup. Obtain those instructions through the maintainer's approved private channel.
 
 A local frontend server can still connect to remote services. Confirm that the application points to the intended development environment before using forms, accounts, or checkout.
@@ -152,12 +158,24 @@ Open [http://localhost:3000](http://localhost:3000). The development server relo
 | `npm run test:watch` | Start the test watcher. |
 | `npm run test:e2e` | Test the browser flow against isolated local services. |
 | `npm run check` | Run the secret scan, tests, build, and runtime dependency audit. |
+| `npm run format:check` | Check formatting of server, tooling, and test files. |
+| `npm run check:secrets` | Scan tracked files for private environment files and recognized secret patterns. |
+| `npm run release:check` | Validate supplied deployment environment variables and project/origin consistency. |
+
+Install the browser before running the end-to-end suite:
+
+```bash
+npx playwright install chromium
+npm run test:e2e
+```
+
+On Linux CI hosts, use `npx playwright install --with-deps chromium` to install the browser's system dependencies too. The browser suite runs against isolated local identity, database, and payment fixtures; it does not use production accounts or a live payment gateway.
 
 A successful build or test run is a development check; it does not establish the security of a deployed environment.
 
 ## Deployment
 
-The frontend can be configured on Vercel using these build settings:
+The application and its server endpoints can be configured on Vercel using these build settings:
 
 | Setting | Value |
 | --- | --- |
@@ -168,6 +186,8 @@ The frontend can be configured on Vercel using these build settings:
 | Output directory | `build` |
 
 The repository includes API routing, client-side navigation, and response security headers. Follow [deployment preparation](docs/deployment.md) to configure a staging environment and validate the service cutover before production.
+
+Run `npm run release:check` with the intended deployment variables in the process environment before enabling checkout. This command does not load `.env.local` automatically or verify deployed database policies, credential rotation, or merchant settings. A successful build alone can still leave online checkout disabled.
 
 When adapting the project for another domain, review the website metadata, sitemap, analytics settings, authentication redirects, and service configuration before publication.
 
