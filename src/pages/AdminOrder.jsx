@@ -1,3 +1,4 @@
+import { authenticatedFetch } from '../utils/api';
 import React, { useEffect, useState, useCallback, useMemo, memo, useRef } from 'react';
 import { supabase } from '../supabaseClient';
 import { useNavigate } from 'react-router-dom';
@@ -1008,7 +1009,7 @@ export default function AdminProductManagement() {
       const { data: { session }, error: sessionError } = await supabase.auth.getSession();
       
       if (sessionError || !session?.user) {
-        navigate('/login');
+        navigate('/auth');
         return false;
       }
 
@@ -1025,7 +1026,7 @@ export default function AdminProductManagement() {
       return true;
     } catch (error) {
       console.error('Authentication error:', error);
-      navigate('/login');
+      navigate('/auth');
       return false;
     }
   }, [navigate]);
@@ -1315,12 +1316,7 @@ export default function AdminProductManagement() {
     setUpdatingPayments(prev => new Set([...prev, orderId]));
 
     try {
-      const { error } = await supabase
-        .from('orders')
-        .update({ payment_status: newStatus.toUpperCase() })
-        .eq('id', orderId);
-
-      if (error) throw error;
+      await authenticatedFetch('/api/cod-payment', { method: 'POST', body: JSON.stringify({orderId, status:newStatus.toUpperCase()}) });
 
       setOrders(prev => prev.map(order => 
         order.id === orderId 

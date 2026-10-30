@@ -111,7 +111,7 @@ const Footer = () => {
         <div className="max-w-7xl mx-auto px-4">
           <div className="footer-ec-bottom-content flex flex-col md:flex-row justify-between items-center space-y-4 md:space-y-0">
             <div className="footer-ec-policies flex flex-wrap justify-center md:justify-end space-x-6">
-              <a href="#/TnC" className="footer-ec-link text-green-300 text-sm">All Required Policy</a>
+              <a href="/terms-and-conditions" className="footer-ec-link text-green-300 text-sm">All Required Policy</a>
             </div>
           </div>
 

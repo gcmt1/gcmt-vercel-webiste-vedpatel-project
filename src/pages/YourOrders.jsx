@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import { supabase } from '../supabaseClient';
-import { useUser } from '@supabase/auth-helpers-react';
+import { useAppContext } from '../AppContext';
 import { 
   Package, 
   Calendar, 
@@ -23,10 +23,10 @@ import {
   ShoppingBag
 } from 'lucide-react';
 import styles from '../styles/YourOrders.module.css';
-import { generateInvoicePDF } from '../components/InvoiceGenerator';
+
 
 const YourOrders = () => {
-  const user = useUser();
+  const { user } = useAppContext();
   const [orders, setOrders] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
@@ -293,7 +293,7 @@ const YourOrders = () => {
               <div className={styles.orderCardHeader}>
                 <div className={styles.orderIdentification}>
                   <h3 className={styles.orderNumber}>
-                    Order #{order.id?.slice(-8) || 'N/A'}
+                    Order #{String(order.id ?? '').slice(-8) || 'N/A'}
                   </h3>
                   <div className={styles.orderDate}>
                     <Calendar className={styles.smallIcon} />
@@ -396,7 +396,7 @@ const YourOrders = () => {
               <div className={styles.modalTitle}>
                 <Package className={styles.orderIcon} />
                 <div>
-                  <h2>Order #{selectedOrder.id?.slice(-8) || 'N/A'}</h2>
+                  <h2>Order #{String(selectedOrder.id ?? '').slice(-8) || 'N/A'}</h2>
                   <p className={styles.modalSubtitle}>
                     Placed on {formatDate(selectedOrder.created_at)}
                   </p>
@@ -600,7 +600,7 @@ const YourOrders = () => {
                   <div className={styles.modalActionsSection}>
                     <div className={styles.modalActionButtons}>
                       <button
-                        onClick={() => generateInvoicePDF(selectedOrder)}
+                        onClick={async () => { try { const { generateInvoicePDF } = await import('../components/InvoiceGenerator'); await generateInvoicePDF(selectedOrder); } catch { window.alert('The invoice could not be generated. Please try again.'); } }}
                         className={styles.invoiceButton}
                       >
                         <Download className={styles.smallIcon} />

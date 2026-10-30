@@ -1,3 +1,4 @@
+import { csvContent } from '../utils/security';
 import React, { useEffect, useState, useMemo, useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { supabase } from '../supabaseClient';
@@ -108,7 +109,7 @@ export default function AdminSubscription() {
       } = await supabase.auth.getSession();
       
       if (sessionError || !session?.user) {
-        navigate('/login');
+        navigate('/auth');
         return false;
       }
       
@@ -126,7 +127,7 @@ export default function AdminSubscription() {
       return true;
     } catch (error) {
       console.error('Admin verification failed:', error);
-      navigate('/login');
+      navigate('/auth');
       return false;
     }
   }, [navigate]);
@@ -217,7 +218,7 @@ export default function AdminSubscription() {
       ])
     ];
     
-    const csv = rows.map((r) => r.map((v) => `"${v}"`).join(',')).join('\n');
+    const csv = csvContent(rows);
     const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
     const url = URL.createObjectURL(blob);
     const a = document.createElement('a');

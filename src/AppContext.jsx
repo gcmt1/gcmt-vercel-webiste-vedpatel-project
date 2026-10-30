@@ -1,51 +1,60 @@
-import React, { createContext, useContext, useEffect, useState } from 'react';
-import { supabase } from './supabaseClient';
-
-const AppContext = createContext();
-
+import React, { createContext, useContext, useEffect, useState } from "react";
+import { supabase, clearGuestCredentials } from "./supabaseClient";
+const AppContext = createContext(null);
 export function AppProvider({ children }) {
-  const [user, setUser] = useState(null);
-
+  const [session, setSession] = useState(null);
+  const [loading, setLoading] = useState(true);
   useEffect(() => {
-    const initSession = async () => {
-      const { data: { session } } = await supabase.auth.getSession();
-      if (session?.user) {
-        setUser(session.user);
-      } else {
-        // Create guest account
-        const guestEmail = `${crypto.randomUUID()}@guest.local`;
-        const guestPass = crypto.randomUUID();
-        const { data, error } = await supabase.auth.signUp({
-          email: guestEmail,
-          password: guestPass,
-        });
-        if (!error) {
-          await supabase.from('users').update({ is_guest: true }).eq('id', data.user.id);
-          setUser(data.user);
+    let active = true;
+    let changed = false;
+    clearGuestCredentials();
+    // Remove the old, conflicting guest storage after migrating only product IDs and quantities.
+    try {
+      if (
+        !localStorage.getItem("guest_cart") &&
+        sessionStorage.getItem("guest_cart")
+      )
+        localStorage.setItem(
+          "guest_cart",
+          sessionStorage.getItem("guest_cart"),
+        );
+      sessionStorage.removeItem("guest_cart");
+    } catch {
+      /* Storage can be disabled by the browser. */
+    }
+    const { data: listener } = supabase.auth.onAuthStateChange(
+      (_event, next) => {
+        changed = true;
+        if (active) {
+          setSession(next);
+          setLoading(false);
         }
-      }
+      },
+    );
+    supabase.auth
+      .getSession()
+      .then(({ data }) => {
+        if (active && !changed) {
+          setSession(data.session);
+          setLoading(false);
+        }
+      })
+      .catch(() => {
+        if (active) setLoading(false);
+      });
+    return () => {
+      active = false;
+      listener.subscription.unsubscribe();
     };
-
-    initSession();
-
-    const handleUnload = async () => {
-      if (user && user.email.endsWith('@guest.local')) {
-        await supabase.from('users').delete().eq('id', user.id);
-        await supabase.auth.signOut();
-      }
-    };
-
-    window.addEventListener('beforeunload', handleUnload);
-    return () => window.removeEventListener('beforeunload', handleUnload);
-  }, [user]);
-
+  }, []);
   return (
-    <AppContext.Provider value={{ user }}>
+    <AppContext.Provider
+      value={{ user: session?.user || null, session, loading }}
+    >
       {children}
     </AppContext.Provider>
   );
 }
-
 export function useAppContext() {
   return useContext(AppContext);
 }

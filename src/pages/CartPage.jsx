@@ -3,240 +3,47 @@ import { supabase } from '../supabaseClient';
 import { useAppContext } from '../AppContext';
 import { useToast } from '../components/ToastContext';
 import { useNavigate } from 'react-router-dom';
+import { loadCart, writeGuestCart, validQuantity } from '../utils/cart';
 import '../styles/CartPage.css';
-import product from '../assets/product.png';
 import { Trash2, Minus, Plus, ShoppingBag, ArrowLeft, Lock, Truck, Shield } from 'lucide-react';
-
 function CartPage() {
-  const [cartItems, setCartItems] = useState([]);
-  const [loading, setLoading] = useState(true);
-  const [userLoading, setUserLoading] = useState(true);
-  const [updateLoading, setUpdateLoading] = useState(null);
-  const [removeLoading, setRemoveLoading] = useState(null);
-  const { user } = useAppContext();
-  const { showToast } = useToast();
+  const [cartItems,setCartItems] = useState([]);
+  const [loading,setLoading] = useState(true);
+  const [updateLoading,setUpdateLoading] = useState(null);
+  const [removeLoading,setRemoveLoading] = useState(null);
+  const {user,loading:userLoading} = useAppContext();
+  const {showToast} = useToast();
   const navigate = useNavigate();
-
-  // Wait for user authentication state to be determined
-  useEffect(() => {
-    const checkAuthState = async () => {
-      try {
-        const { data: { user: currentUser } } = await supabase.auth.getUser();
-        setUserLoading(false);
-      } catch (error) {
-        console.error('Auth state check error:', error);
-        setUserLoading(false);
-      }
-    };
-
-    if (user !== undefined) {
-      setUserLoading(false);
-    } else {
-      checkAuthState();
-    }
-  }, [user]);
-
-  useEffect(() => {
-    let isMounted = true;
-
-    const fetchCartItems = async () => {
-      if (userLoading) return;
-      
-      setLoading(true);
-      try {
-        if (!user?.id) {
-          const guestCart = JSON.parse(localStorage.getItem('guest_cart')) || [];
-          if (isMounted) {
-            setCartItems(guestCart);
-          }
-        } else {
-          const { data, error } = await supabase
-            .from('cart_items')
-            .select(`
-              id,
-              product_id,
-              quantity,
-              products (
-                product_name,
-                product_price,
-                product_image
-              )
-            `)
-            .eq('user_id', user.id);
-
-          if (error) throw error;
-
-          if (isMounted) {
-            const formattedItems = data.map(item => ({
-              id: item.id,
-              productId: item.product_id,
-              name: item.products.product_name,
-              price: item.products.product_price,
-              image: product,
-              quantity: item.quantity,
-            }));
-            
-            setCartItems(formattedItems);
-            
-            const guestCart = JSON.parse(localStorage.getItem('guest_cart')) || [];
-            if (guestCart.length > 0) {
-              await mergeGuestCartWithUserCart(guestCart, formattedItems);
-            }
-          }
-        }
-      } catch (err) {
-        console.error('Fetch cart error:', err.message);
-        showToast('Failed to load cart', 'error');
-      } finally {
-        if (isMounted) setLoading(false);
-      }
-    };
-
-    fetchCartItems();
-
-    return () => {
-      isMounted = false;
-    };
-  }, [user?.id, userLoading, showToast]);
-
-  const mergeGuestCartWithUserCart = async (guestCart, userCart) => {
-    try {
-      const mergedItems = [...userCart];
-      
-      for (const guestItem of guestCart) {
-        const existingItemIndex = userCart.findIndex(
-          item => item.productId === guestItem.productId
-        );
-        
-        if (existingItemIndex >= 0) {
-          const newQuantity = userCart[existingItemIndex].quantity + guestItem.quantity;
-          await supabase
-            .from('cart_items')
-            .update({ quantity: newQuantity })
-            .eq('user_id', user.id)
-            .eq('product_id', guestItem.productId);
-          
-          mergedItems[existingItemIndex].quantity = newQuantity;
-        } else {
-          const { data, error } = await supabase
-            .from('cart_items')
-            .insert({
-              user_id: user.id,
-              product_id: guestItem.productId,
-              quantity: guestItem.quantity
-            })
-            .select(`
-              id,
-              product_id,
-              quantity,
-              products (
-                product_name,
-                product_price,
-                product_image
-              )
-            `);
-          
-          if (!error && data && data[0]) {
-            mergedItems.push({
-              id: data[0].id,
-              productId: data[0].product_id,
-              name: data[0].products.product_name,
-              price: data[0].products.product_price,
-              image: data[0].products.product_image,
-              quantity: data[0].quantity,
-            });
-          }
-        }
-      }
-      
-      setCartItems(mergedItems);
-      localStorage.removeItem('guest_cart');
-      showToast('Cart items merged successfully', 'success');
-    } catch (error) {
-      console.error('Error merging guest cart:', error);
-    }
-  };
-
-  const updateQuantity = async (productId, change) => {
+  useEffect(()=>{
+    let active=true; if(userLoading) return;
+    setLoading(true);
+    loadCart(user?.id,supabase).then(items=>{if(active)setCartItems(items);}).catch(()=>showToast('Failed to load cart','error')).finally(()=>{if(active)setLoading(false);});
+    return ()=>{active=false;};
+  },[user?.id,userLoading,showToast]);
+  const updateQuantity = async (productId,change) => {
+    const item=cartItems.find(item=>item.productId===productId); const quantity=item.quantity+change;
+    if(!validQuantity(quantity))return;
     setUpdateLoading(productId);
-    const currentItem = cartItems.find(item => item.productId === productId);
-    const newQuantity = Math.max(1, currentItem.quantity + change);
-    
-    const updatedItems = cartItems.map(item =>
-      item.productId === productId
-        ? { ...item, quantity: newQuantity }
-        : item
-    );
-    setCartItems(updatedItems);
-
     try {
-      if (user) {
-        const { error } = await supabase
-          .from('cart_items')
-          .update({ quantity: newQuantity })
-          .eq('user_id', user.id)
-          .eq('product_id', productId);
-        if (error) throw error;
-      } else {
-        localStorage.setItem('guest_cart', JSON.stringify(updatedItems));
-      }
-    } catch (err) {
-      console.error('Update quantity error:', err.message);
-      showToast('Failed to update quantity', 'error');
-      const revertedItems = cartItems.map(item =>
-        item.productId === productId
-          ? { ...item, quantity: currentItem.quantity }
-          : item
-      );
-      setCartItems(revertedItems);
-    } finally {
-      setUpdateLoading(null);
-    }
+      const updated=cartItems.map(row=>row.productId===productId?{...row,quantity}:row);
+      if(user){const {error}=await supabase.from('cart_items').update({quantity}).eq('product_id',productId).eq('user_id',user.id);if(error)throw error;}
+      else writeGuestCart(updated.map(({productId,quantity})=>({productId,quantity})));
+      setCartItems(updated);window.dispatchEvent(new Event('cart-changed'));
+    }catch{showToast('Unable to update the cart.','error');}finally{setUpdateLoading(null);}
   };
-
   const removeItem = async productId => {
     setRemoveLoading(productId);
-    const itemToRemove = cartItems.find(item => item.productId === productId);
-    const updatedItems = cartItems.filter(item => item.productId !== productId);
-    setCartItems(updatedItems);
-
     try {
-      if (user) {
-        const { error } = await supabase
-          .from('cart_items')
-          .delete()
-          .eq('user_id', user.id)
-          .eq('product_id', productId);
-        if (error) throw error;
-      } else {
-        localStorage.setItem('guest_cart', JSON.stringify(updatedItems));
-      }
-      showToast('Item removed from cart', 'success');
-    } catch (err) {
-      console.error('Remove item error:', err.message);
-      showToast('Failed to remove item', 'error');
-      setCartItems(prevItems => [...prevItems, itemToRemove]);
-    } finally {
-      setRemoveLoading(null);
-    }
+      const updated=cartItems.filter(row=>row.productId!==productId);
+      if(user){const {error}=await supabase.from('cart_items').delete().eq('product_id',productId).eq('user_id',user.id);if(error)throw error;}
+      else writeGuestCart(updated.map(({productId,quantity})=>({productId,quantity})));
+      setCartItems(updated);window.dispatchEvent(new Event('cart-changed'));
+    }catch{showToast('Unable to remove the item.','error');}finally{setRemoveLoading(null);}
   };
-
-  const handlePlaceOrder = async () => {
-    if (cartItems.length === 0) {
-      showToast('Your cart is empty', 'error');
-      return;
-    }
-    
-    navigate('/checkout');
-  };
-
-  const calculateTotal = () =>
-    cartItems.reduce((sum, item) => sum + item.price * item.quantity, 0);
-    
-  const calculateSubtotal = (price, quantity) => price * quantity;
-
-  const getTotalItems = () => cartItems.reduce((sum, item) => sum + item.quantity, 0);
-
+  const handlePlaceOrder = ()=>{if(cartItems.length)navigate('/checkout');else showToast('Your cart is empty.','error');};
+  const calculateTotal=()=>cartItems.reduce((sum,item)=>sum+item.price*item.quantity,0);
+  const calculateSubtotal=(price,quantity)=>price*quantity;
+  const getTotalItems=()=>cartItems.reduce((sum,item)=>sum+item.quantity,0);
   if (userLoading) {
     return (
       <div className="cart-loading-container">

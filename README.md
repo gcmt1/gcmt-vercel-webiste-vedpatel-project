@@ -23,7 +23,7 @@ A React storefront and administration workspace for **GCMT Herbal / Gold Coin Mu
 
 GCMT Shop combines a customer shopping experience with dedicated tools for store administration. Customers can explore herbal and dental-care products, read product information, manage their cart, initiate online checkout, and view order records. Store administrators can maintain catalog content, manage orders, review customer enquiries, and export subscriber records.
 
-The application uses **React, JavaScript, React Router, and custom CSS**, with Supabase for authentication, data access, and product-image storage. Online checkout integrates with CCAvenue through a separately configured payment service.
+The application uses **React, JavaScript, React Router, and custom CSS**, with Supabase for authentication, data access, and product-image storage. Online checkout integrates with CCAvenue through same-origin server endpoints.
 
 ## Features
 
@@ -66,14 +66,14 @@ The customer checkout currently offers online payment. Administration of existin
 | State | React hooks and Context |
 | Authentication and data | Supabase Auth and Supabase JavaScript client |
 | Product images | Supabase Storage |
-| Payments | CCAvenue and a separately configured payment service |
+| Payments | CCAvenue and same-origin server endpoints |
 | PDF invoices | html2canvas and jsPDF |
 | Styling | Custom CSS and CSS Modules |
 | Icons | Lucide React |
 | Page metadata | react-helmet-async |
-| Build tooling | Create React App / react-scripts |
-| Test tooling | Jest through react-scripts and React Testing Library |
-| Additional server-side source | TypeScript/Deno Edge Function |
+| Build tooling | Vite |
+| Test tooling | Vitest, React Testing Library, Playwright, and isolated PostgreSQL tests |
+| Server runtime | Node.js Fetch handlers on Vercel |
 
 Dependency declarations and resolved versions are maintained in `package.json` and `package-lock.json`.
 
@@ -89,16 +89,16 @@ flowchart TD
     Gateway -->|Payment response| Payments
 ```
 
-The application contains customer pages, shared interface components, and dedicated administration screens. Supabase provides the connected authentication, database, and storage services. Payment-service deployment and merchant configuration are managed separately from the frontend.
+The application contains customer pages, shared interface components, and dedicated administration screens. Supabase provides the connected authentication, database, and storage services. The application includes same-origin server endpoints for checkout, order lookup, and payment responses. Merchant credentials and database access policies are provisioned separately.
 
 ## Getting Started
 
 ### Prerequisites
 
-- **Node.js 20 or newer**, meeting the minimum requirement of the locked router dependency.
+- **Node.js 24.15.0 or newer within the 24.x release line** (required by the locked test dependencies).
 - **npm** and **Git**.
 - An approved development Supabase environment with the application's data model, access policies, and image storage.
-- A separately configured test payment service when developing checkout functionality.
+- An approved CCAvenue test configuration when developing checkout functionality.
 
 ### 1. Clone and install
 
@@ -112,7 +112,7 @@ The repository's `.npmrc` supplies the dependency-resolution settings used by th
 
 ### 2. Prepare development services
 
-Before starting the application, have the maintainer configure the frontend to use the approved development services. Use development accounts and test records for local work.
+Copy `.env.example` to `.env.local` and configure an approved development Supabase project and its public key. Use development accounts and test records for local work. Configure server-only variables only when testing checkout.
 
 This repository contains application source and service configuration, rather than a complete backend provisioning package. Database provisioning, access policies, merchant settings, and payment-service configuration require a separate setup. Obtain those instructions through the maintainer's approved private channel.
 
@@ -124,20 +124,22 @@ A local frontend server can still connect to remote services. Confirm that the a
 npm start
 ```
 
-Open [http://localhost:3000](http://localhost:3000). The development server reloads the application as source files change.
+Open [http://localhost:3000](http://localhost:3000). The development server reloads source changes and serves the local API routes. Server endpoints remain unavailable until development credentials and the database migration are configured.
 
 ## Project Structure
 
 | Path | Purpose |
 | --- | --- |
-| `public/` | HTML entry point, public branding, manifest, sitemap, and robots file. |
+| `index.html`, `public/` | HTML entry point, public branding, manifest, sitemap, and robots file. |
 | `src/App.jsx` | Application providers, shared layout, and routing. |
 | `src/components/` | Navigation, footer, product cards, reviews, cart controls, notifications, and invoice generation. |
 | `src/hooks/` | Reusable application hooks. |
 | `src/pages/` | Storefront, customer, checkout, payment, and administration screens. |
 | `src/styles/` | Page-specific styling and CSS Modules. |
 | `src/assets/` | Logos, product images, promotional artwork, and marketing video. |
-| `supabase/` | Local service configuration and additional server-side source. |
+| `supabase/` | Database migrations and local service configuration. |
+| `server/`, `api/` | Server-only checkout, payment response, and order endpoints. |
+| `tests/` | Regression tests and isolated service fixtures. |
 | `vercel.json` | Frontend hosting configuration. |
 
 ## Available Commands
@@ -146,8 +148,10 @@ Open [http://localhost:3000](http://localhost:3000). The development server relo
 | --- | --- |
 | `npm start` | Start the local development server. |
 | `npm run build` | Generate the production frontend in `build/`. |
-| `npm test` | Launch the configured test runner in watch mode. |
-| `npm test -- --watchAll=false` | Run the configured tests once. |
+| `npm test` | Run unit, handler, and database-policy regression tests. |
+| `npm run test:watch` | Start the test watcher. |
+| `npm run test:e2e` | Test the browser flow against isolated local services. |
+| `npm run check` | Run the secret scan, tests, build, and runtime dependency audit. |
 
 A successful build or test run is a development check; it does not establish the security of a deployed environment.
 
@@ -158,12 +162,12 @@ The frontend can be configured on Vercel using these build settings:
 | Setting | Value |
 | --- | --- |
 | Project root | Repository root |
-| Framework preset | Create React App |
+| Framework preset | Vite |
 | Install command | `npm ci` |
 | Build command | `npm run build` |
 | Output directory | `build` |
 
-The repository includes a single-page application rewrite for client-side navigation. Connected services and payment processing require separate environment-specific configuration.
+The repository includes API routing, client-side navigation, and response security headers. Follow [deployment preparation](docs/deployment.md) to configure a staging environment and validate the service cutover before production.
 
 When adapting the project for another domain, review the website metadata, sitemap, analytics settings, authentication redirects, and service configuration before publication.
 

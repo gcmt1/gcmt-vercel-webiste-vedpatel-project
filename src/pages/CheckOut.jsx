@@ -1,5 +1,7 @@
-import React, { useState, useEffect, useCallback } from 'react';
-import { supabase } from '../supabaseClient';
+import React, { useState, useEffect, useRef } from 'react';
+import { supabase, ensureCheckoutUser } from '../supabaseClient';
+import { loadCart, mergeGuestCart } from '../utils/cart';
+import { authenticatedFetch } from '../utils/api';
 import { useAppContext } from '../AppContext';
 import { useToast } from '../components/ToastContext';
 import { useNavigate } from 'react-router-dom';
@@ -9,10 +11,12 @@ export default function Checkout() {
   const { user } = useAppContext();
   const { showToast } = useToast();
   const navigate = useNavigate();
+  const submitting = useRef(false);
+  const attemptId = useRef(null);
 
   // Responsiveness
   const [isMobile, setIsMobile] = useState(window.innerWidth < 768);
-  
+
   useEffect(() => {
     const handleResize = () => setIsMobile(window.innerWidth < 768);
     window.addEventListener('resize', handleResize);
@@ -35,66 +39,20 @@ export default function Checkout() {
   });
 
   // ==================== CART MANAGEMENT ====================
-  
+
   useEffect(() => {
     fetchCart();
   }, [user?.id]);
 
   const fetchCart = async () => {
     setLoadingCart(true);
-    try {
-      if (!user?.id) {
-        // Guest cart (sessionStorage)
-        const guestCart = JSON.parse(sessionStorage.getItem('guest_cart')) || [];
-        setCartItems(guestCart);
-      } else {
-        // Logged-in user cart (Supabase)
-        const { data, error } = await supabase
-          .from('cart_items')
-          .select(`
-            id,
-            product_id,
-            quantity,
-            products:products (id, product_name, product_price, product_image)
-          `)
-          .eq('user_id', user.id);
-
-        if (error) throw error;
-
-        setCartItems(
-          data.map(item => ({
-            id: item.id,
-            productId: item.product_id,
-            name: item.products?.product_name ?? 'Unknown',
-            price: item.products?.product_price ?? 0,
-            image: item.products?.product_image ?? '',
-            quantity: item.quantity,
-          }))
-        );
-      }
-    } catch (err) {
-      console.error('Fetch cart error:', err.message);
-      showToast('Failed to load cart', 'error');
-    } finally {
-      setLoadingCart(false);
-    }
+    try { setCartItems(await loadCart(user?.id,supabase)); }
+    catch { showToast('Failed to load cart','error'); }
+    finally { setLoadingCart(false); }
   };
 
-  const clearCart = useCallback(async () => {
-    try {
-      if (user?.id) {
-        await supabase.from('cart_items').delete().eq('user_id', user.id);
-      } else {
-        sessionStorage.removeItem('guest_cart');
-      }
-      setCartItems([]);
-    } catch (err) {
-      console.error('Error clearing cart:', err);
-    }
-  }, [user?.id]);
-
   // ==================== FORM HANDLING ====================
-  
+
   const handleChange = (e) => {
     const { name, value } = e.target;
     setFormData((prev) => ({ ...prev, [name]: value }));
@@ -102,7 +60,7 @@ export default function Checkout() {
 
   const validateForm = () => {
     const requiredFields = ['name', 'email', 'phone', 'street', 'city', 'state', 'pincode'];
-    
+
     // Check for empty fields
     for (let field of requiredFields) {
       if (!formData[field]?.trim()) {
@@ -136,202 +94,49 @@ export default function Checkout() {
   };
 
   // ==================== CALCULATIONS ====================
-  
+
   const subtotal = cartItems.reduce((sum, item) => sum + (item.price * item.quantity), 0);
   const shipping = 0; // Free shipping
   const total = subtotal + shipping;
-  
+
   const formatCurrency = (amount) =>
-    new Intl.NumberFormat('en-IN', { 
-      style: 'currency', 
+    new Intl.NumberFormat('en-IN', {
+      style: 'currency',
       currency: 'INR',
       minimumFractionDigits: 2,
-      maximumFractionDigits: 2 
+      maximumFractionDigits: 2
     }).format(amount);
 
-  // ==================== ORDER CREATION ====================
-  
-  const createOrder = async () => {
-    if (!validateForm()) return null;
-
-    if (cartItems.length === 0) {
-      showToast('Your cart is empty. Add items before checkout.', 'error');
-      return null;
-    }
-
-    try {
-      // Get current user ID (can be null for guests)
-      const currentUserId = user?.id || null;
-
-      console.log('📝 Creating order with user ID:', currentUserId);
-
-      const product_list = cartItems.map((item) => ({
-        product_id: item.productId,
-        name: item.name,
-        quantity: item.quantity,
-        unit_price: item.price,
-        total_price: item.price * item.quantity,
-      }));
-
-      // Generate unique payment ID for CCAvenue
-      const generatedPaymentId = crypto.randomUUID();
-      
-      const orderData = {
-        user_id: currentUserId,
-        user_name: formData.name.trim(),
-        user_email: formData.email.trim().toLowerCase(),
-        user_phone: formData.phone.trim(),
-        address_line: formData.street.trim(),
-        city: formData.city.trim(),
-        state: formData.state.trim(),
-        postal_code: formData.pincode.trim(),
-        product_list,
-        total_amount: total,
-        payment_status: 'PENDING', // Always starts as PENDING for online payment
-        order_status: 'PENDING',   // Order pending until payment confirmed
-        created_at: new Date().toISOString(),
-        payment_id: generatedPaymentId,
-      };
-
-      console.log('📋 Order data to be inserted:', {
-        ...orderData,
-        product_list: orderData.product_list.length + ' items'
-      });
-
-      const { data, error } = await supabase
-        .from('orders')
-        .insert([orderData])
-        .select('id, payment_id, user_id')
-        .single();
-
-      if (error) throw error;
-
-      console.log('✅ Order created successfully:', data);
-
-      return {
-        orderId: data.id,
-        paymentId: data.payment_id,
-        userId: data.user_id
-      };
-    } catch (err) {
-      console.error('Error creating order:', err);
-      throw new Error(`Failed to create order: ${err.message}`);
-    }
-  };
-
-  // ==================== FORM SUBMISSION ====================
-  
-  const handleSubmitForm = async () => {
-    if (!validateForm()) return;
-    
-    if (cartItems.length === 0) {
-      showToast('Your cart is empty. Add items before checkout.', 'error');
-      return;
-    }
-
+  const handleSubmitForm = () => {
+    if (!validateForm() || !cartItems.length) return;
     setFormSubmitted(true);
-    showToast('Contact information validated! Click "Pay Now" to proceed with payment.', 'success');
   };
-
-  // ==================== PAYMENT PROCESSING ====================
-  
   const handleOnlinePayment = async () => {
-    if (!formSubmitted) {
-      showToast('Please submit your contact information first.', 'error');
-      return;
-    }
-
-    if (cartItems.length === 0) {
-      showToast('Your cart is empty.', 'error');
-      return;
-    }
-
-    setLoading(true);
+    if (!formSubmitted || !validateForm() || !cartItems.length || submitting.current) return;
+    submitting.current=true; setLoading(true);
     try {
-      // Create order with PENDING status
-      const orderResult = await createOrder();
-      if (!orderResult) {
-        setLoading(false);
-        return;
+      const checkoutUser = await ensureCheckoutUser();
+      await mergeGuestCart(checkoutUser.id,supabase);
+      if (!attemptId.current) attemptId.current=crypto.randomUUID();
+      const result=await authenticatedFetch('/api/create-order',{method:'POST',body:JSON.stringify({attemptId:attemptId.current,shipping:formData})});
+      if (result.totalPaise !== Math.round(total*100)) {
+        attemptId.current=null; setCartItems(await loadCart(checkoutUser.id,supabase)); setFormSubmitted(false);
+        throw new Error('Cart prices have changed. Review the updated total before continuing.');
       }
-
-      const { orderId, paymentId, userId } = orderResult;
-      
-      console.log('📦 Order created for payment:', { orderId, paymentId, userId });
-      
-      const requestBody = {
-        order_id: paymentId, // This is the payment_id that CCAvenue will return
-        amount: total.toFixed(2),
-        currency: 'INR',
-        redirect_url: 'https://gcmtshop-cca-backend-kappa.vercel.app/api/paymentResponse',
-        cancel_url: 'https://gcmtshop-cca-backend-kappa.vercel.app/api/paymentResponse', // Same endpoint handles cancellation
-        language: 'EN',
-        billing_name: formData.name.trim(),
-        billing_address: formData.street.trim(),
-        billing_city: formData.city.trim(),
-        billing_state: formData.state.trim(),
-        billing_zip: formData.pincode.trim(),
-        billing_country: 'India',
-        billing_tel: formData.phone.trim(),
-        billing_email: formData.email.trim().toLowerCase(),
-        merchant_param1: orderId.toString(), // Store actual order ID for reference
-        merchant_param2: userId || 'guest',
-        merchant_param3: formData.email.trim().toLowerCase(), // Store email for reference
-      };
-
-      console.log('🚀 Initiating payment with request:', {
-        ...requestBody,
-        order_id: paymentId.substring(0, 8) + '...'
-      });
-
-      const response = await fetch('https://gcmtshop-cca-backend-kappa.vercel.app/api/createOrder', {
-        method: 'POST',
-        headers: { 
-          'Content-Type': 'application/json',
-          'Accept': 'application/json',
-        },
-        body: JSON.stringify(requestBody),
-      });
-
-      if (!response.ok) {
-        const errorText = await response.text();
-        console.error('❌ Backend response error:', {
-          status: response.status,
-          statusText: response.statusText,
-          body: errorText
-        });
-        throw new Error(`Payment gateway error. Please try again.`);
-      }
-
-      const result = await response.json();
-      console.log('✅ Backend response received');
-
-      if (!result?.encRequest || typeof result.encRequest !== 'string' || result.encRequest.trim().length === 0) {
-        throw new Error('Invalid payment response from server');
-      }
-
-      const ACCESS_CODE = result.accessCode;
-      if (!ACCESS_CODE) {
-        throw new Error('Payment configuration error. Please contact support.');
-      }
-
-      // Clear cart before redirecting (cart will be restored if payment fails)
-      await clearCart();
-
-      // Submit to CCAvenue
-      await submitToCCAvenue(result.encRequest, ACCESS_CODE);
-
-    } catch (err) {
-      console.error('💥 Payment initiation error:', err);
-      showToast(`Payment failed: ${err.message}`, 'error');
-      setLoading(false);
+      if (result.gatewayUrl !== 'https://secure.ccavenue.com/transaction/transaction.do?command=initiateTransaction') throw new Error('Unexpected payment destination.');
+      // The server records the paid receipt and reconciles purchased cart quantities atomically.
+      // Keep the cart intact during payment initiation, cancellation and network failures.
+      await submitToCCAvenue(result.encRequest,result.accessCode);
+    } catch(error) {
+      showToast(error.message || 'Payment could not be started.','error');
+      setLoading(false); submitting.current=false;
     }
   };
 
   const submitToCCAvenue = (encRequest, accessCode) => {
     return new Promise((resolve, reject) => {
       try {
-        console.log('🔧 Preparing CCAvenue form submission...');
+
 
         if (!encRequest || typeof encRequest !== 'string' || encRequest.trim().length === 0) {
           throw new Error('Invalid encRequest');
@@ -369,7 +174,7 @@ export default function Checkout() {
         form.appendChild(accessInput);
         document.body.appendChild(form);
 
-        console.log('✅ Submitting to CCAvenue...');
+
 
         setTimeout(() => {
           try {
@@ -388,7 +193,7 @@ export default function Checkout() {
   };
 
   // ==================== RENDER COMPONENTS ====================
-  
+
   const renderShippingForm = () => (
     <div className="checkout-card">
       <h2>Shipping Information</h2>
@@ -436,7 +241,7 @@ export default function Checkout() {
             />
           </div>
         ))}
-        
+
         {!formSubmitted && (
           <button
             onClick={handleSubmitForm}
@@ -446,7 +251,7 @@ export default function Checkout() {
             Continue to Payment
           </button>
         )}
-        
+
         {formSubmitted && (
           <div className="success-message">
             ✓ Contact information confirmed
@@ -501,7 +306,7 @@ export default function Checkout() {
         ) : (
           <div className="empty-cart-message">
             <p>No items in cart</p>
-            <button 
+            <button
               onClick={() => navigate('/products')}
               className="btn btn-outline"
             >
@@ -509,7 +314,7 @@ export default function Checkout() {
             </button>
           </div>
         )}
-        
+
         {cartItems.length > 0 && (
           <>
             <div className="summary-row">
@@ -553,7 +358,7 @@ export default function Checkout() {
         >
           Return to Cart
         </button>
-        
+
         {formSubmitted && (
           <div className="payment-methods">
             <button
@@ -575,7 +380,7 @@ export default function Checkout() {
             </p>
           </div>
         )}
-        
+
         {!formSubmitted && (
           <div className="payment-info">
             Please fill in your contact information to proceed with payment
@@ -586,7 +391,7 @@ export default function Checkout() {
   };
 
   // ==================== MAIN RENDER ====================
-  
+
   return (
     <div className="checkout-container">
       <div className="checkout-wrapper">

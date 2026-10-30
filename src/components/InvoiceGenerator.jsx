@@ -1,12 +1,13 @@
+import { escapeHtml } from '../utils/security';
 import jsPDF from 'jspdf';
 import html2canvas from 'html2canvas';
 import logo from '../assets/GCMT-logo.png'; // Make sure this path is correct and logo is imported
 
-export async function generateInvoicePDF(order) {
+export async function generateInvoicePDF(rawOrder) {
+  const order = Object.fromEntries(Object.entries(rawOrder).map(([key,value]) => [key, typeof value === 'string' && key !== 'product_list' ? escapeHtml(value) : value]));
   // Fixing the product list parsing
-  const productList = Array.isArray(order.product_list)
-    ? order.product_list
-    : JSON.parse(order.product_list);
+  const rawProducts = Array.isArray(rawOrder.product_list) ? rawOrder.product_list : JSON.parse(rawOrder.product_list);
+  const productList = rawProducts.map(item => Object.fromEntries(Object.entries(item).map(([key,value]) => [key, typeof value === 'string' ? escapeHtml(value) : value])));
 
   // Calculate totals
   const subtotal = productList.reduce((sum, p) => sum + parseFloat(p.total_price), 0);
@@ -60,7 +61,7 @@ export async function generateInvoicePDF(order) {
           <span style="color: #2c3e50; font-weight: 600;">${formatCurrency(subtotal)}</span>
         </div>
         <div style="display: flex; justify-content: space-between; padding: 10px 16px; border-bottom: 1px solid #e9ecef; font-size: 13px;">
-          <span style="color: #6c757d; font-weight: 500;">Tax (GST 18%):</span>
+          <span style="color: #6c757d; font-weight: 500;">Tax:</span>
           <span style="color: #2c3e50; font-weight: 600;">${formatCurrency(taxAmount)}</span>
         </div>
         <div style="display: flex; justify-content: space-between; padding: 12px 16px; background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: white; font-size: 16px; font-weight: 700; border-radius: 0 0 6px 6px;">
@@ -209,7 +210,7 @@ export async function generateInvoicePDF(order) {
     }
 
     // Save with professional filename
-    const fileName = `GCMT_Invoice_${order.id}_${new Date().toISOString().split('T')[0]}.pdf`;
+    const fileName = `GCMT_Invoice_${String(rawOrder.id).replace(/[^a-zA-Z0-9_-]/g, '').slice(0,64)}_${new Date().toISOString().split('T')[0]}.pdf`;
     pdf.save(fileName);
 
   } catch (error) {

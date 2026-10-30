@@ -2,8 +2,7 @@ import React from "react";
 import { BrowserRouter as Router, Routes, Route } from "react-router-dom";
 import { AppProvider } from "./AppContext";
 import { ToastProvider } from "./components/ToastContext";
-import { SessionContextProvider } from "@supabase/auth-helpers-react";
-import { createClient } from "@supabase/supabase-js";
+import RequireAdmin from "./components/RequireAdmin";
 import { HelmetProvider } from "react-helmet-async";
 
 import HomePage from "./pages/HomePage";
@@ -31,16 +30,9 @@ import YourOrders from "./pages/YourOrders"; // ✅ Fix: Capital Y
 import AdminProductManager  from "./pages/AdminProductManager"; // ✅ Fix: Import AdminProductManager
 import "./App.css";
 
-// ✅ Initialize Supabase
-const supabase = createClient(
-  "https://mmiyyhmbxodfdnuqomyx.supabase.co",
-  "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im1taXl5aG1ieG9kZmRudXFvbXl4Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NDYwNzkwNDksImV4cCI6MjA2MTY1NTA0OX0.KIwuisA_nq1_9ROw88wzMQMa7HQfzPMlrCjCqXdyEDk"
-);
-
 function App() {
   return (
     <HelmetProvider>
-    <SessionContextProvider supabaseClient={supabase}>
       <AppProvider>
         <ToastProvider>
           <Router>
@@ -67,12 +59,12 @@ function App() {
                   <Route path="/tnc" element={<Tnc />} />
                   <Route path="/payment-success" element={<PaymentSuccess />} />
                   <Route path="/payment-cancel" element={<PaymentCancel />} />
-                  <Route path="/admin-order" element={<AdminOrder />} />
-                  <Route path="/admin-landing" element={<AdminLanding />} />
-                  <Route path="/admin-subscription" element={<AdminSubscription />} />
-                  <Route path="/admin-contactform" element={<AdminContactForm />} />
+                  <Route path="/admin-order" element={<RequireAdmin><AdminOrder /></RequireAdmin>} />
+                  <Route path="/admin-landing" element={<RequireAdmin><AdminLanding /></RequireAdmin>} />
+                  <Route path="/admin-subscription" element={<RequireAdmin><AdminSubscription /></RequireAdmin>} />
+                  <Route path="/admin-contactform" element={<RequireAdmin><AdminContactForm /></RequireAdmin>} />
                   <Route path="/your-orders" element={<YourOrders />} /> {/* ✅ Fix case */}
-                  <Route path="/admin-product-manager" element={<AdminProductManager/>} /> {/* ✅ Fix: Use correct component name */}    
+                  <Route path="/admin-product-manager" element={<RequireAdmin><AdminProductManager /></RequireAdmin>} /> {/* ✅ Fix: Use correct component name */}
                   {/* Catch-all route for undefined paths */}
                   <Route path="*" element={<HomePage />} />
                 </Routes>
@@ -86,7 +78,6 @@ function App() {
           </Router>
         </ToastProvider>
       </AppProvider>
-    </SessionContextProvider>
     </HelmetProvider>
   );
 }

@@ -87,7 +87,7 @@ const ProductDetail = () => {
           images = ['/api/placeholder/500/500'];
         }
 
-        console.log('Processed images:', images); // Debug log to verify images are processed correctly
+         // Debug log to verify images are processed correctly
 
         const productData = {
           id: prodData.id,

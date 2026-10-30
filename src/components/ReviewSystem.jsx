@@ -70,7 +70,7 @@ const ReviewSystem = ({ productId }) => {
     const { error } = await supabase.from('product_reviews').insert({
       product_id: productId,
       user_id: user.id,
-      user_name: user.user_metadata?.full_name || user.email?.split('@')[0],
+      user_name: user.user_metadata?.full_name || user.user_metadata?.name || user.email?.split('@')[0] || 'Guest',
       rating: newRating,
       review_text: newReviewText.trim()
     });

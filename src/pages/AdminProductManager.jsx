@@ -141,7 +141,7 @@ export default function AdminProductManager() {
             const { data: { session }, error: sessionError } = await supabase.auth.getSession();
             
             if (sessionError || !session?.user) {
-                navigate('/login');
+                navigate('/auth');
                 return false;
             }
 
@@ -157,7 +157,7 @@ export default function AdminProductManager() {
             }
             return true;
         } catch (error) {
-            navigate('/login');
+            navigate('/auth');
             return false;
         }
     };

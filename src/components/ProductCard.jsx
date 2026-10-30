@@ -34,12 +34,11 @@ export default function ProductCard({ productId, hideAddToCart = false }) {
       } else {
         let imageUrl = DefaultProductImage;
         if (data.product_image) {
-          const { data: imageData, error: imageError } = supabase
-            .storage
-            .from('product-image')
-            .getPublicUrl(data.product_image);
-          if (!imageError && imageData && imageData.publicUrl) {
-            imageUrl = imageData.publicUrl;
+          const first = String(data.product_image).split(',')[0].trim();
+          if (/^https?:\/\//i.test(first)) imageUrl = first;
+          else if (first) {
+            const {data:imageData} = supabase.storage.from('product-image').getPublicUrl(first);
+            imageUrl=imageData?.publicUrl || DefaultProductImage;
           }
         }
 

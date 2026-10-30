@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from 'react';
-import { supabase } from '../supabaseClient';
+import { supabase, isGuestUser } from '../supabaseClient';
 import { useNavigate } from 'react-router-dom';
 import '../styles/ProfilePage.css';
 
@@ -17,7 +17,7 @@ const ProfilePage = () => {
       } else if (data?.user) {
         setUser(data.user);
         // Example guest detection rule:
-        if (data.user.email && data.user.email.includes('guest')) {
+        if (isGuestUser(data.user)) {
           setIsGuest(true);
         }
       }

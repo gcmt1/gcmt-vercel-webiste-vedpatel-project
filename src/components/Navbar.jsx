@@ -20,6 +20,7 @@ export default function NavBar() {
   const [adminRole, setAdminRole] = useState(false);
 
   const navigate = useNavigate();
+  const currentCartUser = useRef(null);
   const mobileSearchRef = useRef(null);
   const searchRef = useRef(null);
 
@@ -36,6 +37,7 @@ export default function NavBar() {
       const { data } = await supabase.auth.getSession();
       const currentUser = data.session?.user || null;
       setUser(currentUser);
+      currentCartUser.current = currentUser?.id || null;
       if (currentUser) {
         fetchCartCount(currentUser.id);
         checkIfAdmin(currentUser.id);
@@ -47,6 +49,7 @@ export default function NavBar() {
     const { data: listener } = supabase.auth.onAuthStateChange((_e, session) => {
       const currentUser = session?.user || null;
       setUser(currentUser);
+      currentCartUser.current = currentUser?.id || null;
       if (currentUser) {
         fetchCartCount(currentUser.id);
         checkIfAdmin(currentUser.id);
@@ -56,7 +59,9 @@ export default function NavBar() {
       }
     });
 
-    return () => listener.subscription.unsubscribe();
+    const refreshCart = () => { if (currentCartUser.current) fetchCartCount(currentCartUser.current); };
+    window.addEventListener('cart-changed', refreshCart);
+    return () => { listener.subscription.unsubscribe(); window.removeEventListener('cart-changed', refreshCart); };
   }, []);
 
   const checkIfAdmin = async (userId) => {
@@ -71,7 +76,7 @@ export default function NavBar() {
       return;
     }
 
-    if (data?.role && data.role !== 'user') {
+    if (data?.role === 'admin') {
       setAdminRole(true);
     } else {
       setAdminRole(false);
@@ -122,7 +127,7 @@ export default function NavBar() {
     e.preventDefault();
     const q = e.target.querySelector('input').value.trim();
     if (q) {
-      navigate(`/search?q=${encodeURIComponent(q)}`);
+      navigate('/products');
       setSearchOpen(false);
     }
   }

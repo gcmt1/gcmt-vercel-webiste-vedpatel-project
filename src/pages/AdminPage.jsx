@@ -20,7 +20,7 @@ export default function AdminLanding() {
   const checkAdmin = async () => {
     const { data: { session }, error: sessionError } = await supabase.auth.getSession();
     if (sessionError || !session?.user) {
-      navigate('/#/AuthPage');
+      navigate('/auth');
       return false;
     }
 
@@ -42,7 +42,7 @@ export default function AdminLanding() {
 
   const handleLogout = async () => {
     await supabase.auth.signOut();
-    navigate('/#/AuthPage');
+    navigate('/auth');
   };
 
   if (loading) {

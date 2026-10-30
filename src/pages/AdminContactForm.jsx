@@ -1,3 +1,4 @@
+import { csvContent } from '../utils/security';
 import React, { useEffect, useState } from 'react';
 import { supabase } from '../supabaseClient';
 import { 
@@ -50,7 +51,7 @@ export default function AdminContactForm() {
   const verifyAdmin = async () => {
     const { data: { session }, error: sessionError } = await supabase.auth.getSession();
     if (sessionError || !session?.user) {
-      navigate('/login');
+      navigate('/auth');
       return false;
     }
     const { data: profile, error: profileErr } = await supabase
@@ -105,7 +106,7 @@ export default function AdminContactForm() {
         new Date(m.created_at).toLocaleString()
       ])
     ];
-    const csv = rows.map(r => r.map(f => `"${f}"`).join(',')).join('\n');
+    const csv = csvContent(rows);
     const blob = new Blob([csv], { type: 'text/csv' });
     const url = URL.createObjectURL(blob);
     const a = document.createElement('a');
