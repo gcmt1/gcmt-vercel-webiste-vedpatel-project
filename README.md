@@ -6,14 +6,14 @@
 
 ### Herbal commerce, from product discovery to order management.
 
-A React storefront and administration workspace for **GCMT Herbal / Gold Coin Multi-Trade Private Limited**, with Supabase-powered product data, customer accounts, carts, reviews, and order records.
+A React storefront and administration workspace for **GCMT Herbal / Gold Coin Multi-Trade Private Limited**.
 
-![React](https://img.shields.io/badge/React-19.1-149ECA?style=flat-square&logo=react&logoColor=white)
+![React](https://img.shields.io/badge/React-Frontend-149ECA?style=flat-square&logo=react&logoColor=white)
 ![JavaScript](https://img.shields.io/badge/JavaScript-ES6%2B-F7DF1E?style=flat-square&logo=javascript&logoColor=black)
-![Supabase](https://img.shields.io/badge/Supabase-Auth%20%7C%20Database%20%7C%20Storage-3ECF8E?style=flat-square&logo=supabase&logoColor=white)
-![Create React App](https://img.shields.io/badge/Build-Create%20React%20App-20232A?style=flat-square)
+![Supabase](https://img.shields.io/badge/Supabase-Backend%20Services-3ECF8E?style=flat-square&logo=supabase&logoColor=white)
+![CSS](https://img.shields.io/badge/CSS-Responsive%20Design-663399?style=flat-square&logo=css&logoColor=white)
 
-[Explore Features](#features) · [Run Locally](#getting-started) · [Architecture](#architecture) · [Deployment](#deployment)
+[Features](#features) · [Technology](#technology) · [Getting Started](#getting-started) · [Deployment](#deployment)
 
 </div>
 
@@ -21,90 +21,84 @@ A React storefront and administration workspace for **GCMT Herbal / Gold Coin Mu
 
 ## Overview
 
-GCMT Shop brings the customer shopping experience and day-to-day store administration into one application. Customers can explore herbal and dental-care products, view ingredients and usage information, manage a cart, initiate a CCAvenue payment, and view their order history. Administrators have dedicated screens for maintaining products, handling orders, reviewing enquiries, and exporting newsletter subscribers.
+GCMT Shop combines a customer shopping experience with dedicated tools for store administration. Customers can explore herbal and dental-care products, read product information, manage their cart, initiate online checkout, and view order records. Store administrators can maintain catalog content, manage orders, review customer enquiries, and export subscriber records.
 
-The frontend is built with **React 19, JavaScript, React Router, and custom CSS**. Supabase supplies authentication, database access, and product-image storage. Online checkout integrates with a **separate CCAvenue backend**.
-
-> **Repository scope:** This repository includes the React application, static assets, Supabase local configuration, and an additional payment callback Edge Function. The external payment backend, database schema migrations, and seed data are not included. See [Getting Started](#getting-started) and [Implementation Notes](#implementation-notes) before adapting it to a new environment.
+The application uses **React, JavaScript, React Router, and custom CSS**, with Supabase for authentication, data access, and product-image storage. Online checkout integrates with CCAvenue through a separately configured payment service.
 
 ## Features
 
 ### Customer experience
 
-| Area | Implemented functionality |
+| Area | Capabilities |
 | --- | --- |
-| Product discovery | Homepage product highlights and a database-backed product listing. |
-| Product details | Image gallery, pricing and discount display, size selection, descriptions, benefits, ingredients, usage instructions, and product sharing. |
-| Shopping cart | Add products, adjust quantities, remove items, and review totals. “Buy Now” adds an item and opens checkout. |
-| Accounts | Email/password registration and login, session persistence, profile information, and guest-account handling. |
-| Checkout | Shipping/contact form validation, pending order creation, and CCAvenue payment initiation through an external API. |
-| Order history | Customer-specific order records, payment and fulfilment status displays, order detail dialogs, and downloadable PDF invoices. |
-| Reviews | Star ratings and written reviews, with edit/delete controls for the signed-in review owner. |
-| Customer contact | Contact form submissions stored in Supabase and newsletter signup through the shared footer. |
-| Content | About, FAQ, policy, and blog listing pages; the blog supports filtering its static entries by category and search text. |
-| Presentation | Responsive layouts, mobile navigation, loading states, toast notifications, animations, and reduced-motion rules in several stylesheets. |
-| Metadata | Page-specific metadata on selected routes, FAQ structured data, a sitemap, robots file, and a Google Analytics tag. |
+| Product discovery | Homepage product highlights and a database-backed product catalog. |
+| Product information | Image galleries, pricing and discount displays, size selection, descriptions, benefits, ingredients, and usage instructions. |
+| Shopping cart | Add products, adjust quantities, remove items, and review totals. |
+| Quick checkout | “Buy Now” adds an item to the cart and opens checkout. |
+| Customer accounts | Email/password registration and login, profile information, and session persistence. |
+| Online checkout | Shipping/contact details, form validation, order creation, and CCAvenue payment initiation. |
+| Order history | Customer order records, payment and fulfilment status displays, order detail dialogs, and downloadable PDF invoices. |
+| Product reviews | Star ratings and written reviews, with controls for customers to manage their own reviews. |
+| Contact and newsletter | Customer enquiry submissions and newsletter signup through the shared footer. |
+| Content pages | Company information, FAQs, policies, and a static blog listing with category and text filters. |
+| Responsive interface | Mobile navigation, adaptable layouts, loading states, toast notifications, and animations. |
+| Page metadata | Metadata on selected pages, FAQ structured data, sitemap, and robots file. |
 
-### Administration
-
-Admin screens check the signed-in user's `users.role` for `admin`.
+### Store administration
 
 | Workspace | Capabilities |
 | --- | --- |
-| Product manager | Create, edit, search, and delete products; maintain descriptions, prices, discounts, sizes, ingredients, and usage details. |
-| Image management | Upload multiple images to Supabase Storage using file selection or drag and drop, with a 5 MB per-file limit. |
-| Order management | Search orders, filter by payment/order status or date range, inspect customer and item details, change fulfilment status, and delete individual or selected orders. |
-| Payment handling | Display online payment status and update payment status for existing orders identified by a `COD-` payment ID. |
-| Newsletter subscribers | Search and date-filter subscribers, view summary statistics, delete individual or selected records, and export filtered results to CSV. |
-| Contact enquiries | Search submissions, view message details, delete messages, and export results to CSV. |
+| Product management | Create, edit, search, and delete products; maintain descriptions, prices, discounts, sizes, ingredients, and usage information. |
+| Product images | Upload multiple product images using file selection or drag and drop. |
+| Order management | Search and filter orders, inspect order details, update fulfilment statuses, and manage selected records. |
+| Payment records | View payment statuses and manage payment records for existing cash-on-delivery orders. |
+| Newsletter subscribers | Search and filter subscribers, view summary statistics, manage records, and export results to CSV. |
+| Contact enquiries | Search submissions, view message details, manage records, and export results to CSV. |
 
-The current checkout offers online payment. The presence of COD handling in the admin dashboard does not add a COD option to checkout.
+The customer checkout currently offers online payment. Administration of existing cash-on-delivery records is a separate capability.
 
 ## Technology
 
-| Layer | Technology |
+| Layer | Tools |
 | --- | --- |
-| UI | React 19.1, React DOM, JavaScript/JSX |
-| Routing | React Router DOM 7.5 |
-| Build tooling | Create React App / `react-scripts` 5.0.1 |
-| State | React hooks, application context, and toast context |
-| Authentication | Supabase Auth and `@supabase/auth-helpers-react` |
-| Data and images | Supabase PostgreSQL and Storage through `@supabase/supabase-js` 2.49 |
-| Payments | CCAvenue with a separately hosted encryption/callback API |
-| PDF export | `html2canvas` and `jsPDF` |
-| Styling and icons | Custom CSS, CSS Modules for order history, Lucide React |
-| Page metadata | `react-helmet-async` |
-| Test tooling | Jest through `react-scripts`, React Testing Library, and `jest-dom` |
-| Additional backend code | TypeScript/Deno Supabase Edge Function |
+| User interface | React, React DOM, JavaScript/JSX |
+| Routing | React Router DOM |
+| State | React hooks and Context |
+| Authentication and data | Supabase Auth and Supabase JavaScript client |
+| Product images | Supabase Storage |
+| Payments | CCAvenue and a separately configured payment service |
+| PDF invoices | html2canvas and jsPDF |
+| Styling | Custom CSS and CSS Modules |
+| Icons | Lucide React |
+| Page metadata | react-helmet-async |
+| Build tooling | Create React App / react-scripts |
+| Test tooling | Jest through react-scripts and React Testing Library |
+| Additional server-side source | TypeScript/Deno Edge Function |
 
-`package-lock.json` records the resolved dependency versions. `.npmrc` enables `legacy-peer-deps` for this dependency set.
+Dependency declarations and resolved versions are maintained in `package.json` and `package-lock.json`.
 
 ## Architecture
 
 ```mermaid
 flowchart TD
-    App["React storefront and admin"] --> Auth["Supabase Auth"]
-    App --> DB["Supabase PostgreSQL"]
-    App --> Storage["Supabase Storage"]
-    App --> Backend["External payment backend"]
-    Backend --> Gateway["CCAvenue"]
-    Gateway -->|Payment response| Backend
+    App["React storefront and admin"] --> Auth["Authentication"]
+    App --> Data["Product and order data"]
+    App --> Images["Product image storage"]
+    App --> Payments["Payment service"]
+    Payments --> Gateway["CCAvenue"]
+    Gateway -->|Payment response| Payments
 ```
 
-- **Application shell:** [`src/App.jsx`](src/App.jsx) composes the router, session provider, application context, toast provider, navigation, and footer.
-- **Database access:** Pages, components, and the cart hook access Supabase through [`src/supabaseClient.jsx`](src/supabaseClient.jsx). `App.jsx` also creates a separate client for the session provider.
-- **Customer state:** Account sessions persist in browser storage. Authenticated carts use `cart_items`; guest paths also use browser storage.
-- **Payment boundary:** [`src/pages/CheckOut.jsx`](src/pages/CheckOut.jsx) requests an encrypted payment payload from an external backend and submits it to CCAvenue. That backend's implementation is outside this repository.
-- **Additional callback code:** [`supabase/functions/verifypayment/index.ts`](supabase/functions/verifypayment/index.ts) contains a separate encrypted-response handler that updates order statuses. Its configuration and payment-ID assumptions need reconciliation before use.
+The application contains customer pages, shared interface components, and dedicated administration screens. Supabase provides the connected authentication, database, and storage services. Payment-service deployment and merchant configuration are managed separately from the frontend.
 
 ## Getting Started
 
 ### Prerequisites
 
-- **Node.js 20 or newer**, the minimum required by the locked React Router dependency.
+- **Node.js 20 or newer**, meeting the minimum requirement of the locked router dependency.
 - **npm** and **Git**.
-- A development Supabase project with the application's tables, relationships, policies, and image bucket.
-- A separately configured CCAvenue backend if testing online checkout.
+- An approved development Supabase environment with the application's data model, access policies, and image storage.
+- A separately configured test payment service when developing checkout functionality.
 
 ### 1. Clone and install
 
@@ -114,164 +108,52 @@ cd gcmt-vercel-webiste-vedpatel-project
 npm ci
 ```
 
-### 2. Configure a development Supabase project
+The repository's `.npmrc` supplies the dependency-resolution settings used by this project.
 
-The current source hardcodes its Supabase URL and browser anon key in **both** of these files:
+### 2. Prepare development services
 
-- [`src/supabaseClient.jsx`](src/supabaseClient.jsx)
-- [`src/App.jsx`](src/App.jsx)
+Before starting the application, have the maintainer configure the frontend to use the approved development services. Use development accounts and test records for local work.
 
-Replace those values with your development project's settings in both places. The application attempts to create guest accounts when there is no session, so configure the development connection before opening the app.
+This repository contains application source and service configuration, rather than a complete backend provisioning package. Database provisioning, access policies, merchant settings, and payment-service configuration require a separate setup. Obtain those instructions through the maintainer's approved private channel.
 
-For environment-based configuration, create an ignored `.env.local` file:
+A local frontend server can still connect to remote services. Confirm that the application points to the intended development environment before using forms, accounts, or checkout.
 
-```dotenv
-REACT_APP_SUPABASE_URL=https://your-project.supabase.co
-REACT_APP_SUPABASE_ANON_KEY=your-browser-anon-key
-```
-
-Then adapt **both** client initializers to read these variables. For example:
-
-```javascript
-const supabaseUrl = process.env.REACT_APP_SUPABASE_URL;
-const supabaseAnonKey = process.env.REACT_APP_SUPABASE_ANON_KEY;
-```
-
-Use those values as the first two arguments to `createClient`, retaining the existing auth options in `src/supabaseClient.jsx`.
-
-**Adding `.env.local` alone does not change the current connection:** the checked-in frontend does not read these environment variables yet. Restart the development server after changing environment values.
-
-### 3. Provision the required backend resources
-
-The database resources below are inferred from the application's queries. This is a dependency map, not a complete schema definition.
-
-| Resource | Application use and representative fields |
-| --- | --- |
-| `users` | Profiles and roles: `id`, `email`, `name`, `role`, `is_guest`. |
-| `products` | Catalog content: `id`, `product_name`, `product_price`, `product_discount`, descriptions, images, sizes, benefits, ingredients, and usage fields. |
-| `cart_items` | Account carts: `id`, `user_id`, `product_id`, `quantity`. |
-| `orders` | Customer/shipping details, `user_id`, `product_list`, `total_amount`, `payment_id`, payment/order statuses, `created_at`, and `guest_identifier` used by admin queries. |
-| `product_reviews` | Product reviews: `product_id`, `user_id`, `user_name`, `rating`, `review_text`, and timestamps. |
-| `contact_messages` | Customer enquiries: `name`, `email`, `phone`, `message`, and timestamps. |
-| `newsletter_subscriptions` | Subscriber email addresses and timestamps. |
-| Storage bucket: `product-image` | Uploaded product images and public image URLs. |
-
-Cart queries expect a relationship from `cart_items.product_id` to `products.id`. The login cart-merge path also expects a unique conflict target on `(user_id, product_id)`.
-
-Obtain the actual schema and access policies from the project maintainer before provisioning a new database. No SQL migrations or seed file are tracked; `supabase/config.toml` references a `seed.sql` file that is absent.
-
-Configure database Row Level Security and Storage policies for the intended public, customer, and administrator access. Admin checks in React are UI checks; database permissions must enforce access independently, including protection of role changes and customer order data.
-
-### 4. Start the frontend
+### 3. Start the application
 
 ```bash
 npm start
 ```
 
-Open [http://localhost:3000](http://localhost:3000).
-
-Registration and login are available at `/auth`. To use the admin screens, sign in with an account whose profile has the `admin` role, assigned through a trusted administrative process.
-
-## Payments
-
-The active online checkout follows this flow:
-
-1. Load cart items and validate the customer's shipping/contact details.
-2. Insert an order with `PENDING` payment/order statuses and a generated UUID `payment_id`.
-3. Send payment details to the external `/api/createOrder` endpoint.
-4. Receive `encRequest` and `accessCode` from that backend.
-5. Clear the cart and submit a form to CCAvenue's transaction endpoint.
-6. Send the gateway response to the external `/api/paymentResponse` endpoint configured in the request.
-
-Both external endpoints are currently hardcoded in `src/pages/CheckOut.jsx` under:
-
-```text
-https://gcmtshop-cca-backend-kappa.vercel.app
-```
-
-For another environment, update the create-order URL and both response/cancellation URLs, and configure the corresponding backend and merchant settings. Gateway credentials, encryption, callback validation, and authoritative payment updates belong on that backend.
-
-The included Edge Function reads these server-side variables:
-
-| Variable | Purpose |
-| --- | --- |
-| `SUPABASE_URL` | Supabase project URL. |
-| `SUPABASE_SERVICE_ROLE_KEY` | Privileged server-side database access. |
-| `CCA_WORKING_KEY` | Decryption key used by the callback implementation. |
-
-Keep privileged keys and merchant secrets on the backend. Values prefixed with `REACT_APP_` are included in a Create React App browser build.
-
-The active `/payment-success` page displays an order fetched from Supabase. It does not independently verify an encrypted gateway response; payment confirmation depends on the backend integration.
-
-## Routes
-
-### Storefront and customer pages
-
-| Route | Page |
-| --- | --- |
-| `/` | Homepage |
-| `/products` | Product listing |
-| `/product/:id` | Product details and reviews |
-| `/cart` | Shopping cart |
-| `/checkout` | Shipping details and online checkout |
-| `/auth` | Login and registration |
-| `/profile` | Account information |
-| `/your-orders` | Customer order history and invoices |
-| `/payment-success` | Order summary after payment redirect |
-| `/payment-cancel` | Cancellation page |
-| `/about` | Company information |
-| `/blog` | Static blog listing |
-| `/contact` | Contact information and enquiry form |
-| `/faq` | Frequently asked questions |
-| `/terms-and-conditions`, `/tnc` | Policy page |
-
-### Admin pages
-
-| Route | Workspace |
-| --- | --- |
-| `/admin-landing` | Admin navigation dashboard |
-| `/admin-product-manager` | Product and image management |
-| `/admin-order` | Order management |
-| `/admin-subscription` | Newsletter subscribers |
-| `/admin-contactform` | Contact enquiries |
-
-Unmatched paths currently render the homepage.
+Open [http://localhost:3000](http://localhost:3000). The development server reloads the application as source files change.
 
 ## Project Structure
 
-| Path | Responsibility |
+| Path | Purpose |
 | --- | --- |
-| `public/` | HTML entry point, public branding, manifest, sitemap, robots file, and hosting remnants. |
-| `src/App.jsx` | Application providers, shared layout, and route definitions. |
-| `src/AppContext.jsx` | Application user context and guest-account initialization. |
-| `src/supabaseClient.jsx` | Shared Supabase client and session helpers. |
-| `src/components/` | Navigation, footer, product cards, reviews, cart buttons, toast notifications, scrolling, and PDF invoice generation. |
-| `src/hooks/useCart.jsx` | Add-to-cart logic for account and guest paths. |
-| `src/pages/` | Storefront, account, checkout, payment, and admin screens. |
-| `src/styles/`, `src/index.css`, `src/App.css` | Page styles, shared utilities, responsive rules, and animations. |
-| `src/assets/` | Logos, product photography, promotional artwork, and the marketing video. |
-| `src/utils/ccaUtils.js` | Auxiliary payment helper containing a placeholder backend URL. |
-| `supabase/config.toml` | Local Supabase service and function configuration. |
-| `supabase/functions/verifypayment/` | Additional TypeScript payment-response handler. |
-| `vercel.json` | SPA fallback rewrite for client-side routes. |
-| `test.js` | Standalone CCAvenue encryption fixture generator; separate from the React test runner. |
+| `public/` | HTML entry point, public branding, manifest, sitemap, and robots file. |
+| `src/App.jsx` | Application providers, shared layout, and routing. |
+| `src/components/` | Navigation, footer, product cards, reviews, cart controls, notifications, and invoice generation. |
+| `src/hooks/` | Reusable application hooks. |
+| `src/pages/` | Storefront, customer, checkout, payment, and administration screens. |
+| `src/styles/` | Page-specific styling and CSS Modules. |
+| `src/assets/` | Logos, product images, promotional artwork, and marketing video. |
+| `supabase/` | Local service configuration and additional server-side source. |
+| `vercel.json` | Frontend hosting configuration. |
 
-## Scripts and Testing
+## Available Commands
 
 | Command | Purpose |
 | --- | --- |
-| `npm start` | Start the development server. |
+| `npm start` | Start the local development server. |
 | `npm run build` | Generate the production frontend in `build/`. |
-| `npm test` | Start the interactive React test runner. |
-| `npm test -- --watchAll=false` | Run the configured React tests once. |
-| `npm run deploy` | Run the predeploy build and publish `build/` with `gh-pages`. |
-| `npm run eject` | Eject Create React App configuration; a one-way tooling change. |
+| `npm test` | Launch the configured test runner in watch mode. |
+| `npm test -- --watchAll=false` | Run the configured tests once. |
 
-The checked-in `src/App.test.js` is the original Create React App “learn react” test. Its assertion does not match this storefront. The repository does not include application-specific integration or end-to-end tests, or a checked-in CI workflow.
+A successful build or test run is a development check; it does not establish the security of a deployed environment.
 
 ## Deployment
 
-### Vercel frontend configuration
+The frontend can be configured on Vercel using these build settings:
 
 | Setting | Value |
 | --- | --- |
@@ -281,27 +163,17 @@ The checked-in `src/App.test.js` is the original Create React App “learn react
 | Build command | `npm run build` |
 | Output directory | `build` |
 
-[`vercel.json`](vercel.json) rewrites incoming paths to `/`, allowing `BrowserRouter` routes to load directly. This deploys the frontend; the external payment API and Supabase resources require their own configuration.
+The repository includes a single-page application rewrite for client-side navigation. Connected services and payment processing require separate environment-specific configuration.
 
-The repository's configured website address is **`https://gcmtshop.com/`**, appearing in `package.json`, CNAME files, metadata, and the sitemap. Update those references, analytics settings, auth redirect settings, and payment callback destinations when using another domain.
+When adapting the project for another domain, review the website metadata, sitemap, analytics settings, authentication redirects, and service configuration before publication.
 
-The `gh-pages` script and `public/404.html` reflect a separate GitHub Pages path. The current application uses `BrowserRouter`, while that fallback redirects to a hash URL; review routing before choosing GitHub Pages as the host.
+## Contributing and Security
 
-## Implementation Notes
+- Use approved development services and test data for contributions.
+- Keep credentials, merchant secrets, customer records, and private configuration out of commits, screenshots, and public discussions.
+- Keep privileged service credentials on the server and review access policies as part of backend changes.
+- Coordinate security reports privately with the maintainer. Avoid publishing sensitive findings or reproduction details in public issues or pull requests.
 
-<details>
-<summary><strong>Current integration details and limitations</strong></summary>
+## Repository
 
-These points describe the checked-in source and distinguish the implemented UI paths from integrations that need alignment.
-
-| Area | Current state |
-| --- | --- |
-| Guest sessions and carts | Guest creation exists in both `AppContext.jsx` and `AuthPage.jsx` with different identity conventions. The cart page uses `localStorage`, while the cart hook and checkout use `sessionStorage` for guest carts. These paths need a consistent storage and identity model. |
-| Payment callback configuration | `config.toml` names `verify-payment` and references that directory, but the tracked function directory is `verifypayment`. The handler parses a numeric order ID, while active checkout sends a UUID `payment_id` to CCAvenue. Its decryption also differs from the standalone fixture generator. Reconcile these details before relying on this handler. |
-| Alternate payment components | `src/pages/PaymentPages.jsx` contains an alternative verification flow calling `/api/verify-payment`; it is not mounted by `App.jsx`, and that API implementation is absent here. |
-| Navigation | The navbar links search to `/search`, but that route is not defined. Some admin redirects and footer links retain `/login` or hash-based paths rather than the registered `/auth` and policy routes. |
-| Product data consistency | Product cards resolve `product_image` as a Storage path, while the manager and detail page handle full URLs or comma-separated URLs. Displayed discounts and selected sizes also need alignment with cart/order pricing and item data. |
-| UI-only affordances | Wishlist/favourite toggles use component state. The blog contains static entries and placeholder article/pagination controls; this repository does not provide a blog CMS, persistent wishlist, courier integration, or order-email sending implementation. |
-| Invoice totals | PDF invoices currently calculate tax at `0`, while the template labels it “GST 18%”. Confirm the intended calculation and label before business use. |
-
-</details>
+Source and project updates: [gcmt1/gcmt-vercel-webiste-vedpatel-project](https://github.com/gcmt1/gcmt-vercel-webiste-vedpatel-project).
