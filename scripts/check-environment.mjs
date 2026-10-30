@@ -10,10 +10,10 @@ function fail(message) {
 const browserUrl = env.REACT_APP_SUPABASE_URL || publicSupabaseUrl;
 if (
   preview &&
-  (!env.REACT_APP_SUPABASE_URL || browserUrl === publicSupabaseUrl)
+  (!env.REACT_APP_SUPABASE_URL || !env.REACT_APP_SUPABASE_ANON_KEY)
 )
   fail(
-    "Configure isolated preview service credentials before building a preview.",
+    "Configure REACT_APP_SUPABASE_URL and REACT_APP_SUPABASE_ANON_KEY before building a preview.",
   );
 if (release || (production && env.SECURE_CHECKOUT_ENABLED === "true")) {
   for (const name of [

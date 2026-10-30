@@ -17,7 +17,7 @@ Use Node.js 24 and the committed lockfile. Deploy this change to an isolated sta
 ## Release gates
 
 - `npm run release:check` validates required deployment variables and project/origin consistency. It does not certify database policies, gateway settings, or credential revocation.
-- Vercel preview builds require an explicit isolated project URL; they cannot silently use the compatibility production URL.
+- Vercel preview builds require an explicit `REACT_APP_SUPABASE_URL` and `REACT_APP_SUPABASE_ANON_KEY`; they cannot silently use compatibility defaults. An explicitly configured existing project is accepted for compatibility. Use an isolated staging project for migration, authentication, and payment validation before production rollout.
 - A missing server configuration leaves payment endpoints unavailable. There is no fallback to a separate, unvalidated payment service.
 - CI and local tests must not receive production credentials or customer records.
 
