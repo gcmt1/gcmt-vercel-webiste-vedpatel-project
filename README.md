@@ -23,7 +23,7 @@ A React storefront and administration workspace for **GCMT Herbal / Gold Coin Mu
 
 GCMT Shop combines a customer shopping experience with dedicated tools for store administration. Customers can explore herbal and dental-care products, read product information, manage their cart, initiate online checkout, and view order records. Store administrators can maintain catalog content, manage orders, review customer enquiries, and export subscriber records.
 
-The application uses **React, JavaScript, React Router, and custom CSS**, with Supabase for authentication, data access, and product-image storage. Online checkout integrates with CCAvenue through same-origin server endpoints.
+The application uses **React, JavaScript, React Router, and custom CSS**, with Supabase for authentication, data access, and product-image storage. This source implements CCAvenue checkout through same-origin server endpoints. The public storefront bundle observed on November 23, 2026 contains a separate legacy integration. The candidate is isolated and release is blocked pending the gates in the [engineering audit](docs/engineering-audit.md).
 
 ## Features
 
@@ -34,7 +34,7 @@ The application uses **React, JavaScript, React Router, and custom CSS**, with S
 | Product discovery | Homepage product highlights and a database-backed product catalog. |
 | Product information | Image galleries, pricing and discount displays, size selection, descriptions, benefits, ingredients, and usage instructions. |
 | Shopping cart | Add products, adjust quantities, remove items, and review totals. |
-| Quick checkout | “Buy Now” adds an item to the cart and opens checkout. |
+| Quick checkout | “Buy Now” opens size selection for products with variants. For a product without variants it adds one item and opens checkout. |
 | Customer accounts | Email/password registration and login, profile information, and session persistence. |
 | Online checkout | Shipping/contact details, form validation, order creation, and CCAvenue payment initiation. |
 | Order history | Customer order records, payment and fulfilment status displays, order detail dialogs, and downloadable PDF invoices. |
@@ -55,7 +55,7 @@ The application uses **React, JavaScript, React Router, and custom CSS**, with S
 | Newsletter subscribers | Search and filter subscribers, view summary statistics, manage records, and export results to CSV. |
 | Contact enquiries | Search submissions, view message details, manage records, and export results to CSV. |
 
-The customer checkout implements online payment. Its availability in a deployed environment depends on the server configuration, database migration, and payment-provider validation described in [deployment preparation](docs/deployment.md). Administration of existing cash-on-delivery records is a separate capability.
+Customer checkout supports online payment and a separately gated cash-on-delivery path. Both default off. Its availability in a deployed environment depends on the server configuration, database migration, and payment-provider validation described in [deployment preparation](docs/deployment.md). Cash collection requires a staff identity and receipt reference. Staff archive orders while preserving their payment history.
 
 ## Technology
 
@@ -96,7 +96,7 @@ The application contains customer pages, shared interface components, and dedica
 ### Prerequisites
 
 - **Node.js 24.15.0 or newer within the 24.x release line** (required by the locked test dependencies).
-- **npm** and **Git**.
+- **npm 11.9.0** and **Git**.
 - An approved development Supabase environment with the application's data model, access policies, and image storage.
 - An approved CCAvenue test configuration when developing checkout functionality.
 
@@ -107,6 +107,8 @@ git clone https://github.com/gcmt1/gcmt-vercel-webiste-vedpatel-project.git
 cd gcmt-vercel-webiste-vedpatel-project
 npm ci
 ```
+
+The clone command retrieves the remote default branch. For this local handoff, use the reviewed `fix/gcmt-checkout-integrity` checkout or apply its verified patch to the baseline identified in the engineering audit.
 
 The repository's `.npmrc` supplies the dependency-resolution settings used by this project.
 
@@ -120,7 +122,7 @@ cp .env.example .env.local
 
 For local API requests from `http://localhost:3000`, set `SITE_URL=http://localhost:3000` in `.env.local`. The origin must match the address used in your browser; `localhost` and `127.0.0.1` are different origins. Use the canonical HTTPS origin for a deployed environment. Gateway callback testing requires a merchant-approved, externally reachable test environment; local tests do not establish payment-provider compatibility.
 
-This repository contains application source and service configuration, rather than a complete backend provisioning package. Database provisioning, access policies, merchant settings, and payment-service configuration require a separate setup. Obtain those instructions through the maintainer's approved private channel.
+For an empty development database, review the opt-in bootstrap in `supabase/bootstrap/empty-project.sql` and both ordered migrations. Existing databases require the separate schema comparison in the deployment guide. Hosted Auth, Storage and merchant integration require a separate setup. Obtain those instructions through the maintainer's approved private channel.
 
 A local frontend server can still connect to remote services. Confirm that the application points to the intended development environment before using forms, accounts, or checkout.
 
@@ -131,6 +133,35 @@ npm start
 ```
 
 Open [http://localhost:3000](http://localhost:3000). The development server reloads source changes and serves the local API routes. Server endpoints remain unavailable until development credentials and the database migration are configured.
+
+## Local fixture storefront
+
+With the locked dependencies installed, run `npm run review` and open `http://127.0.0.1:4173`. The local fixture supplies accounts and catalog rows. Leave that port free when running Playwright. Exercising checkout against real services requires separately provisioned staging credentials.
+
+## Environment
+
+| Variable | Purpose |
+| --- | --- |
+| `REACT_APP_SUPABASE_URL`, `REACT_APP_SUPABASE_ANON_KEY` | Public Supabase URL and publishable/anon key for the intended environment. |
+| `REACT_APP_GA_MEASUREMENT_ID` | Optional public analytics measurement ID. |
+| `REACT_APP_COD_ENABLED` | Build-time visibility of customer COD checkout. |
+| `SUPABASE_URL`, `SUPABASE_SERVICE_ROLE_KEY` | Server database project and privileged key. Use the same project as the browser. |
+| `SITE_URL` | Canonical origin used for same-origin checks and both gateway return URLs. |
+| `CCA_MERCHANT_ID`, `CCA_WORKING_KEY`, `CCA_ACCESS_CODE` | Merchant identity, encryption secret and gateway handoff access code. The server supplies the access code only in the checkout response. |
+| `CCA_ENVIRONMENT` | Select the sandbox or production gateway from the shared allowlist. |
+| `SECURE_CHECKOUT_ENABLED`, `CCA_CALLBACKS_ENABLED` | Independent server gates for new online attempts and processing existing returns. |
+| `STORE_COD_ENABLED` | Server permission for new COD orders. Requires separately approved storefront visibility. |
+| `STORE_PRODUCTION_BRANCH` | Owner-verified production branch. Production guard also checks hosting-provided `VERCEL_ENV`, `VERCEL_GIT_REPO_OWNER`, `VERCEL_GIT_REPO_SLUG` and `VERCEL_GIT_COMMIT_REF`. |
+
+## Troubleshooting
+
+- **Store configuration required.** Configure the two public Supabase settings and restart or rebuild. The fixture storefront requires no real service credentials.
+- **Cart changed.** Review current prices, sizes, quantities and availability. The database compares the complete quote before saving a payable snapshot.
+- **Payment not confirmed.** Open order history in the same account. Support can compare the reference with the merchant and check the private review queue. A new charge requires authoritative clearance of the old attempt.
+- **Invoice unavailable.** Inspect the stored total and historic line shape privately. A mismatch requires finance review.
+- **Receipt tests cannot start.** The native test cluster needs a writable temporary directory and a free loopback port. Playwright also needs Chromium and port 4173.
+
+The [payment lifecycle](docs/payment-lifecycle.md) describes pricing, handoff recovery and final settlement. The [engineering questions](docs/engineering-questions.md), [test evidence and findings](docs/engineering-audit.md), [file inventory](docs/review-scope.md) and [deployment gates](docs/deployment.md) document the review and its limitations.
 
 ## Project Structure
 
@@ -154,12 +185,14 @@ Open [http://localhost:3000](http://localhost:3000). The development server relo
 | --- | --- |
 | `npm start` | Start the local development server. |
 | `npm run build` | Generate the production frontend in `build/`. |
+| `npm run review` | Serve the storefront with synthetic local records and checkout disabled. |
+| `npm run test:postgres` | Start a temporary loopback PostgreSQL cluster and test concurrent writes and rollback. |
 | `npm test` | Run unit, handler, and database-policy regression tests. |
 | `npm run test:watch` | Start the test watcher. |
 | `npm run test:e2e` | Test the browser flow against isolated local services. |
 | `npm run check` | Run the secret scan, tests, build, and runtime dependency audit. |
 | `npm run format:check` | Check formatting of server, tooling, and test files. |
-| `npm run check:secrets` | Scan tracked files for private environment files and recognized secret patterns. |
+| `npm run check:secrets` | Scan tracked and non-ignored untracked source for private environment files and recognized key patterns. |
 | `npm run release:check` | Validate supplied deployment environment variables and project/origin consistency. |
 
 Install the browser before running the end-to-end suite:
@@ -171,7 +204,7 @@ npm run test:e2e
 
 On Linux CI hosts, use `npx playwright install --with-deps chromium` to install the browser's system dependencies too. The browser suite runs against isolated local identity, database, and payment fixtures; it does not use production accounts or a live payment gateway.
 
-A successful build or test run is a development check; it does not establish the security of a deployed environment.
+The final local suite passed 49 Vitest cases, 15 native PostgreSQL cases and 15 Chromium cases. The merchant sandbox, hosted Auth and Storage, deployed schema and access policies, credential retirement, and production routing still require owner evidence. The reconciliation worker has an injectable interface and requires a merchant transport and scheduler. Production release remains blocked.
 
 ## Deployment
 

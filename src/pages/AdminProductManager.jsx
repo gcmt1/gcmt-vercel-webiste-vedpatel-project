@@ -1,3 +1,4 @@
+import {imageExtension} from "../utils/images";
 import React, { useState, useEffect, useRef, useCallback } from 'react';
 import { Pencil, Trash2, PlusCircle, Save, X, AlertCircle, CheckCircle, HelpCircle, Upload, ImageIcon, Search, Filter, RefreshCw } from 'lucide-react';
 import { supabase } from '../supabaseClient';
@@ -107,8 +108,8 @@ export default function AdminProductManager() {
         
         if (formData.product_discount) {
             const discount = parseFloat(formData.product_discount);
-            if (isNaN(discount) || discount < 0 || discount > 100) {
-                newErrors.product_discount = 'Discount must be between 0-100%';
+            if (isNaN(discount) || discount < 0 || discount > 99.99) {
+                newErrors.product_discount = 'Discount must be between 0–99.99%';
             }
         }
         
@@ -165,8 +166,8 @@ export default function AdminProductManager() {
     // Image upload functions
     const uploadImageToSupabase = async (file) => {
         try {
-            const fileExt = file.name.split('.').pop().toLowerCase();
-            const fileName = `${Date.now()}_${Math.random().toString(36).substring(2, 9)}.${fileExt}`;
+            const fileExt = await imageExtension(file);
+            const fileName = `${crypto.randomUUID()}.${fileExt}`;
             
             const { data, error } = await supabase.storage
                 .from('product-image')
@@ -196,7 +197,7 @@ export default function AdminProductManager() {
 
         try {
             const validFiles = Array.from(files).filter(file => {
-                if (!file.type.startsWith('image/')) {
+                if (!['image/jpeg','image/png','image/webp'].includes(file.type)) {
                     setErrors(prev => ({ 
                         ...prev, 
                         imageUpload: `${file.name} is not a valid image file` 
@@ -728,7 +729,7 @@ export default function AdminProductManager() {
                                         name="product_discount" 
                                         type="number"
                                         min="0"
-                                        max="100"
+                                        max="99.99" step="0.01"
                                         value={formData.product_discount || ''} 
                                         onChange={handleChange}
                                         className={`apm-input ${errors.product_discount ? 'apm-input-error' : ''}`}

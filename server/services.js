@@ -1,9 +1,11 @@
+import { checkDatabaseTarget } from "./environment.js";
 import { createClient } from "@supabase/supabase-js";
 import { HttpError } from "./http.js";
 let cached;
 export function getDatabase(env = process.env) {
   if (!env.SUPABASE_URL || !env.SUPABASE_SERVICE_ROLE_KEY)
     throw new HttpError(503, "Service is not configured.");
+  checkDatabaseTarget(env.SUPABASE_URL, env);
   if (!cached)
     cached = createClient(env.SUPABASE_URL, env.SUPABASE_SERVICE_ROLE_KEY, {
       auth: {

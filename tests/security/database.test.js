@@ -22,21 +22,26 @@ beforeAll(async () => {
   db = new PGlite();
   await db.waitReady;
   await db.exec(fixture);
+  await db.exec(readFileSync("supabase/bootstrap/empty-project.sql", "utf8"));
+  await db.exec(
+    "CREATE POLICY unsafe_old_policy ON public.orders FOR ALL TO anon,authenticated USING(true) WITH CHECK(true)",
+  );
   // Historic column grants survive a table-level REVOKE and must be cleared too.
   await db.exec(
     "GRANT UPDATE (payment_status,total_amount) ON public.orders TO authenticated",
   );
-  const migration = readdirSync("supabase/migrations").find((p) =>
-    p.endsWith("_production_security.sql"),
-  );
-  await db.exec(readFileSync("supabase/migrations/" + migration, "utf8"));
+  for (const migration of readdirSync("supabase/migrations")
+    .filter((name) => name.endsWith(".sql"))
+    .sort()) {
+    await db.exec(readFileSync("supabase/migrations/" + migration, "utf8"));
+  }
   await db.exec(`INSERT INTO auth.users(id,email) VALUES('${alice}','alice@example.test'),('${bob}','bob@example.test'),('${admin}','admin@example.test');
  UPDATE public.users SET role='admin' WHERE id='${admin}';
  INSERT INTO public.products VALUES('aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa','Product',100,10,true);
  INSERT INTO public.orders(user_id,payment_id,payment_status,order_status,total_amount,product_list) VALUES
- ('${alice}','${payment}','PENDING','PENDING',90,'[{"product_id":"aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa","quantity":2}]'),
+ ('${alice}','${payment}','PENDING','PENDING',90,'[{"cart_id":"77777777-7777-4777-8777-777777777777","product_id":"aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa","quantity":2}]'),
  ('${bob}','55555555-5555-4555-8555-555555555555','PENDING','PENDING',90,'[]');
- INSERT INTO public.cart_items(user_id,product_id,quantity) VALUES('${alice}','aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa',3);`);
+ INSERT INTO public.cart_items(id,user_id,product_id,quantity) VALUES('77777777-7777-4777-8777-777777777777','${alice}','aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa',3);`);
 }, 30000);
 afterAll(async () => {
   await db?.close();
@@ -101,21 +106,16 @@ describe("database access boundaries", () => {
         )
       ).rows,
     ).toHaveLength(0);
-    expect(
-      (
-        await asRole(
-          "authenticated",
-          alice,
-          "DELETE FROM public.orders RETURNING id",
-        )
-      ).rows,
-    ).toHaveLength(0);
+    for (const user of [alice, admin])
+      await expect(
+        asRole("authenticated", user, "DELETE FROM public.orders RETURNING id"),
+      ).rejects.toThrow(/permission denied/);
     expect(
       (
         await asRole(
           "authenticated",
           admin,
-          "UPDATE public.orders SET order_status='PROCESSING' WHERE user_id=$1 RETURNING id",
+          "UPDATE public.orders SET order_status='CANCELLED' WHERE user_id=$1 RETURNING id",
           [bob],
         )
       ).rows,
@@ -203,7 +203,7 @@ describe("database access boundaries", () => {
       asRole(
         "anon",
         null,
-        "INSERT INTO public.newsletter_subscriptions(email) VALUES(repeat('x',321))",
+        "INSERT INTO public.newsletter_subscriptions(email) VALUES(repeat('x',321)||'@example.test')",
       ),
     ).rejects.toThrow(/row-level security/);
   });

@@ -1,3 +1,4 @@
+import { formatOrderAmount, orderItems } from "../utils/orders";
 import React, { useEffect, useState } from "react";
 import { useNavigate, useSearchParams } from "react-router-dom";
 import { useAppContext } from "../AppContext";
@@ -40,11 +41,6 @@ export default function PaymentSuccess() {
       });
     return () => controller.abort();
   }, [authLoading, user?.id, paymentId]);
-  const currency = (value) =>
-    new Intl.NumberFormat("en-IN", {
-      style: "currency",
-      currency: "INR",
-    }).format(Number(value) || 0);
   if (authLoading || loading)
     return (
       <div className="payment-success-page">
@@ -75,21 +71,25 @@ export default function PaymentSuccess() {
       </div>
     );
   const paid = paidStatuses.has(String(orderData.payment_status).toUpperCase());
+  const cod = orderData.payment_id?.startsWith("COD-");
+  const fulfilment = String(orderData.order_status).toUpperCase();
+  const codDue = cod && String(orderData.payment_status).toUpperCase() === "COD_PENDING" &&
+    ["PENDING", "PROCESSING", "CONFIRMED", "SHIPPED", "DELIVERED"].includes(fulfilment);
   return (
     <div className="payment-success-page">
       <div className="success-content">
         <div className="success-header animate">
-          <h1>{paid ? "Payment confirmed" : "Payment not confirmed"}</h1>
+          <h1>{paid ? "Payment confirmed" : codDue ? "Cash-on-delivery order placed" : "Payment not confirmed"}</h1>
           <p>
             {paid
               ? "Thank you. Your payment has been recorded."
-              : "Your order is not marked as paid. Check its status before making another payment."}
+              : codDue ? "Payment is due on delivery." : "Your order is not marked as paid. Check its status before making another payment."}
           </p>
         </div>
         <div className="order-details-card animate">
           <div className="order-header">
             <h2>Order #{orderData.id}</h2>
-            <span>{orderData.order_status}</span>
+            <span>{orderData.order_status || "Unknown"}</span>
           </div>
           <section className="section customer-info">
             <h3>Customer information</h3>
@@ -106,23 +106,20 @@ export default function PaymentSuccess() {
           </section>
           <section className="section order-items">
             <h3>Order items</h3>
-            {(Array.isArray(orderData.product_list)
-              ? orderData.product_list
-              : []
-            ).map((item, index) => (
+            {orderItems(orderData.product_list).map((item, index) => (
               <div className="item-row" key={index}>
                 <span>
-                  {item.name} × {item.quantity}
+                  {item.name}{item.variant && ` · ${item.variant}`} × {item.quantity}
                 </span>
-                <span>{currency(item.total_price)}</span>
+                <span>{formatOrderAmount(item.total_price)}</span>
               </div>
             ))}
           </section>
           <section className="section payment-info">
             <h3>Payment details</h3>
-            <p>Status: {orderData.payment_status}</p>
+            <p>Status: {orderData.payment_status || "Unknown"}</p>
             <p>Reference: {orderData.payment_id}</p>
-            <strong>Total: {currency(orderData.total_amount)}</strong>
+            <strong>Total: {formatOrderAmount(orderData.total_amount)}</strong>
           </section>
         </div>
         <div className="action-buttons animate">

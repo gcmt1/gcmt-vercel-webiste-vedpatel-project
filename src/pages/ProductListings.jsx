@@ -1,13 +1,18 @@
 import React, { useEffect, useState, useRef } from 'react';
 import { Search, ShoppingCart, Star, Leaf, Shield, Truck, Award, ChevronRight, Play, Heart, Users, CheckCircle } from 'lucide-react';
+import { Link, useSearchParams } from 'react-router-dom';
 import ProductCard from '../components/ProductCard';
 import { supabase } from '../supabaseClient';
-import GCMTLogo from '../assets/GCMT-logo.png';
+import marketingVideo from "../assets/marketing-video.mp4";
+import GCMTLogo from '../assets/GCMT-logo.webp';
 import '../styles/ProductListingPage.css';
 
 export default function Homepage() {
   const [products, setProducts] = useState([]);
-  const [featuredProducts, setFeaturedProducts] = useState([]);
+  const [params] = useSearchParams();
+  const query = (params.get('q') || '').trim().toLowerCase();
+  const featuredProducts = products.filter(p => (p.product_name || '').toLowerCase().includes(query));
+  const [loadError, setLoadError] = useState(false);
   const [loading, setLoading] = useState(true);
   const [currentTestimonial, setCurrentTestimonial] = useState(0);
   const heroRef = useRef(null);
@@ -61,21 +66,18 @@ export default function Homepage() {
   ];
 
   useEffect(() => {
-    const fetchProducts = async () => {
-      setLoading(true);
-      const { data, error } = await supabase
-        .from('products')
-        .select('*');
-      
-      if (error) {
-        console.error('Error fetching products:', error.message);
-      } else {
-        setProducts(data);
-        setFeaturedProducts(data);
+    let active = true;
+    async function fetchProducts() {
+      try {
+        const { data, error } = await supabase.from('products').select('*');
+        if (error) throw error;
+        if (active) setProducts(data || []);
+      } catch {
+        if (active) setLoadError(true);
+      } finally {
+        if (active) setLoading(false);
       }
-      setLoading(false);
-    };
-
+    }
     fetchProducts();
 
     // Testimonial rotation
@@ -83,7 +85,7 @@ export default function Homepage() {
       setCurrentTestimonial((prev) => (prev + 1) % testimonials.length);
     }, 5000);
 
-    return () => clearInterval(interval);
+    return () => { active = false; clearInterval(interval); };
   }, []);
 
   useEffect(() => {
@@ -147,10 +149,7 @@ export default function Homepage() {
                   Shop Now
                   <ChevronRight />
                 </button>
-                <button className="btn-secondary">
-                  <Play />
-                  Watch Video
-                </button>
+                <a className="btn-secondary" href={marketingVideo}><Play /> Watch Video</a>
               </div>
 
               <div className="hero-stats animate-fade-in-up delay-500">
@@ -173,23 +172,23 @@ export default function Homepage() {
 
             <div className="hero-products animate-fade-in-left delay-200">
               <div className="hero-products-grid">
-                {products.slice(0, 2).map((product, index) => (
-                  <ProductCard key={product.id} productId={product.id} />
+                {featuredProducts.slice(0, 2).map((product, index) => (
+                  <ProductCard key={product.id} productId={product.id} catalogProduct={product} />
                 ))}
               </div>
               
               {/* Floating third product */}
-              {products.length > 2 &&
+              {featuredProducts.length > 2 &&
               <div className="floating-product">
                 <div className="floating-product-image">
                   <img 
-                    src={products[2]?.product_image} 
-                    alt={products[2]?.product_name}
+                    src={featuredProducts[2]?.product_image}
+                    alt={featuredProducts[2]?.product_name}
                   />
                 </div>
                 <div className="floating-product-content">
                   <div className="floating-product-label">Top Rated</div>
-                  <div className="floating-product-price">₹{products[2]?.product_price}</div>
+                  <div className="floating-product-price">₹{featuredProducts[2]?.product_price}</div>
                 </div>
               </div>
               }
@@ -235,25 +234,23 @@ export default function Homepage() {
         <div className="container">
           <div className="products-header" data-animate id="products-header">
             <h2 className={`products-title ${isInView['products-header'] ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-8'}`}>
-              Our Bestselling Products
+              {query ? 'Product search results' : 'Our Bestselling Products'}
             </h2>
             <p className={`products-subtitle ${isInView['products-header'] ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-8'}`}>
               Discover our most loved herbal products trusted by thousands
             </p>
           </div>
 
+          {loading && <p role="status">Loading products…</p>}
+          {loadError && <p role="alert">The catalog could not be loaded. Refresh to try again.</p>}
+          {!loading && !loadError && !featuredProducts.length && <p>No products found.</p>}
           <div className="products-grid">
             {featuredProducts.map((product, index) => (
-              <ProductCard key={product.id} productId={product.id} />
+              <ProductCard key={product.id} productId={product.id} catalogProduct={product} />
             ))}
           </div>
           
-          <div className="products-view-all">
-            <button className="btn-outline">
-              View All Products
-              <ChevronRight />
-            </button>
-          </div>
+          {query && <Link className="btn-outline" to="/products#products">View all products</Link>}
         </div>
       </section>
 

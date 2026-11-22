@@ -1,30 +1,13 @@
-import React, { useEffect, useState } from 'react';
+import React from 'react';
+import { useAppContext } from '../AppContext';
 import { supabase, isGuestUser } from '../supabaseClient';
 import { useNavigate } from 'react-router-dom';
 import '../styles/ProfilePage.css';
 
 const ProfilePage = () => {
-  const [user, setUser] = useState(null);
-  const [loading, setLoading] = useState(true);
-  const [isGuest, setIsGuest] = useState(false);
+  const { user, loading } = useAppContext();
+  const isGuest = isGuestUser(user);
   const navigate = useNavigate();
-
-  useEffect(() => {
-    const fetchUser = async () => {
-      const { data, error } = await supabase.auth.getUser();
-      if (error) {
-        console.error('Error fetching user:', error);
-      } else if (data?.user) {
-        setUser(data.user);
-        // Example guest detection rule:
-        if (isGuestUser(data.user)) {
-          setIsGuest(true);
-        }
-      }
-      setLoading(false);
-    };
-    fetchUser();
-  }, []);
 
   const handleLogout = async () => {
     await supabase.auth.signOut();

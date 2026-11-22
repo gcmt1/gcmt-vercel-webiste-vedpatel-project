@@ -1,3 +1,4 @@
+import { gatewayUrls } from "../../shared/gateway.js";
 import React, { useState, useEffect, useRef } from 'react';
 import { supabase, ensureCheckoutUser } from '../supabaseClient';
 import { loadCart, mergeGuestCart } from '../utils/cart';
@@ -12,7 +13,7 @@ export default function Checkout() {
   const { showToast } = useToast();
   const navigate = useNavigate();
   const submitting = useRef(false);
-  const attemptId = useRef(null);
+
 
   // Responsiveness
   const [isMobile, setIsMobile] = useState(window.innerWidth < 768);
@@ -41,15 +42,15 @@ export default function Checkout() {
   // ==================== CART MANAGEMENT ====================
 
   useEffect(() => {
-    fetchCart();
-  }, [user?.id]);
-
-  const fetchCart = async () => {
+    let active = true;
     setLoadingCart(true);
-    try { setCartItems(await loadCart(user?.id,supabase)); }
-    catch { showToast('Failed to load cart','error'); }
-    finally { setLoadingCart(false); }
-  };
+    setCartItems([]);
+    loadCart(user?.id, supabase)
+      .then(items => { if (active) setCartItems(items); })
+      .catch(() => { if (active) showToast('Failed to load cart', 'error'); })
+      .finally(() => { if (active) setLoadingCart(false); });
+    return () => { active = false; };
+  }, [user?.id, showToast]);
 
   // ==================== FORM HANDLING ====================
 
@@ -111,85 +112,65 @@ export default function Checkout() {
     if (!validateForm() || !cartItems.length) return;
     setFormSubmitted(true);
   };
-  const handleOnlinePayment = async () => {
+  const placeOrder = async (method) => {
     if (!formSubmitted || !validateForm() || !cartItems.length || submitting.current) return;
-    submitting.current=true; setLoading(true);
+    submitting.current = true;
+    setLoading(true);
     try {
-      const checkoutUser = await ensureCheckoutUser();
-      await mergeGuestCart(checkoutUser.id,supabase);
-      if (!attemptId.current) attemptId.current=crypto.randomUUID();
-      const result=await authenticatedFetch('/api/create-order',{method:'POST',body:JSON.stringify({attemptId:attemptId.current,shipping:formData})});
-      if (result.totalPaise !== Math.round(total*100)) {
-        attemptId.current=null; setCartItems(await loadCart(checkoutUser.id,supabase)); setFormSubmitted(false);
-        throw new Error('Cart prices have changed. Review the updated total before continuing.');
+      const owner = await ensureCheckoutUser();
+      await mergeGuestCart(owner.id, supabase);
+      const key = `gcmt-checkout:${owner.id}:${method}`;
+      const attemptId = sessionStorage.getItem(key) || crypto.randomUUID();
+      sessionStorage.setItem(key, attemptId);
+      const result = await authenticatedFetch('/api/create-order', {
+        method: 'POST',
+        signal: AbortSignal.timeout(20000),
+        body: JSON.stringify({
+          attemptId,
+          ...(method === 'cod' && {method}),
+          shipping: formData,
+          expectedPaise: Math.round(total * 100),
+          expectedLines: cartItems.map(item => ({
+            productId: String(item.productId), variant: item.variant || '',
+            quantity: item.quantity, unitPaise: Math.round(item.price * 100),
+          })),
+        }),
+      });
+      if (result.existing || result.cod) {
+        sessionStorage.removeItem(key);
+        navigate('/payment-success?payment_id=' + encodeURIComponent(result.paymentId));
+        return;
       }
-      if (result.gatewayUrl !== 'https://secure.ccavenue.com/transaction/transaction.do?command=initiateTransaction') throw new Error('Unexpected payment destination.');
-      // The server records the paid receipt and reconciles purchased cart quantities atomically.
-      // Keep the cart intact during payment initiation, cancellation and network failures.
-      await submitToCCAvenue(result.encRequest,result.accessCode);
-    } catch(error) {
-      showToast(error.message || 'Payment could not be started.','error');
-      setLoading(false); submitting.current=false;
-    }
-  };
-
-  const submitToCCAvenue = (encRequest, accessCode) => {
-    return new Promise((resolve, reject) => {
+      if (result.totalPaise !== Math.round(total * 100) ||
+          !Object.values(gatewayUrls).includes(result.gatewayUrl) ||
+          !result.encRequest || !result.accessCode) {
+        throw new Error('Unable to open payment. Check your order status.');
+      }
+      const form = document.createElement('form');
+      form.method = 'POST';
+      form.action = result.gatewayUrl;
+      form.hidden = true;
+      for (const [name, value] of Object.entries({encRequest:result.encRequest, access_code:result.accessCode})) {
+        const input = document.createElement('input');
+        input.type = 'hidden';
+        input.name = name;
+        input.value = value;
+        form.appendChild(input);
+      }
+      document.body.appendChild(form);
+      try { form.submit(); } finally { form.remove(); }
+      sessionStorage.removeItem(key);
+    } catch (error) {
+      setFormSubmitted(false);
       try {
-
-
-        if (!encRequest || typeof encRequest !== 'string' || encRequest.trim().length === 0) {
-          throw new Error('Invalid encRequest');
-        }
-
-        if (!accessCode || typeof accessCode !== 'string' || accessCode.trim().length === 0) {
-          throw new Error('Invalid accessCode');
-        }
-
-        // Clean up existing forms
-        const existingForms = document.querySelectorAll('form[data-ccavenue-form="true"]');
-        existingForms.forEach(form => form.remove());
-
-        // Create payment form
-        const form = document.createElement('form');
-        form.setAttribute('data-ccavenue-form', 'true');
-        form.method = 'POST';
-        form.action = 'https://secure.ccavenue.com/transaction/transaction.do?command=initiateTransaction';
-        form.target = '_self';
-        form.style.display = 'none';
-        form.enctype = 'application/x-www-form-urlencoded';
-        form.acceptCharset = 'UTF-8';
-
-        const encInput = document.createElement('input');
-        encInput.type = 'hidden';
-        encInput.name = 'encRequest';
-        encInput.value = encRequest.trim();
-
-        const accessInput = document.createElement('input');
-        accessInput.type = 'hidden';
-        accessInput.name = 'access_code';
-        accessInput.value = accessCode.trim();
-
-        form.appendChild(encInput);
-        form.appendChild(accessInput);
-        document.body.appendChild(form);
-
-
-
-        setTimeout(() => {
-          try {
-            form.submit();
-            resolve();
-          } catch (submitError) {
-            console.error('❌ Form submission error:', submitError);
-            reject(new Error(`Form submission failed: ${submitError.message}`));
-          }
-        }, 100);
-      } catch (err) {
-        console.error('❌ Error in submitToCCAvenue:', err);
-        reject(new Error(`CCAvenue submission failed: ${err.message}`));
-      }
-    });
+        const current = (await supabase.auth.getSession()).data.session?.user?.id;
+        setCartItems(await loadCart(current, supabase));
+      } catch {}
+      showToast(error.name === 'TimeoutError' ? 'Checkout timed out. Check your orders before trying again.' : error.message || 'Checkout could not be completed.', 'error');
+    } finally {
+      setLoading(false);
+      submitting.current = false;
+    }
   };
 
   // ==================== RENDER COMPONENTS ====================
@@ -200,7 +181,7 @@ export default function Checkout() {
       <div className="checkout-card-body">
         {Object.keys(formData).map((field) => (
           <div key={field} className="form-group">
-            <label>
+            <label htmlFor={`shipping-${field}`}>
               {field.charAt(0).toUpperCase() +
                 field.slice(1).replace(/([A-Z])/g, ' $1')}
               <span style={{ color: 'red' }}> *</span>
@@ -213,6 +194,8 @@ export default function Checkout() {
                   ? 'tel'
                   : 'text'
               }
+              id={`shipping-${field}`}
+              required
               name={field}
               value={formData[field]}
               onChange={handleChange}
@@ -290,7 +273,7 @@ export default function Checkout() {
                     />
                   )}
                   <div className="order-item-info">
-                    <div className="item-name">{item.name}</div>
+                    <div className="item-name">{item.name}{item.variant && ` · ${item.variant}`}</div>
                     <div className="item-quantity">Qty: {item.quantity}</div>
                     <div className="item-unit-price">
                       {formatCurrency(item.price)} each
@@ -362,7 +345,7 @@ export default function Checkout() {
         {formSubmitted && (
           <div className="payment-methods">
             <button
-              onClick={handleOnlinePayment}
+              onClick={() => placeOrder('online')}
               disabled={loading}
               className="btn btn-success payment-btn"
             >
@@ -375,6 +358,11 @@ export default function Checkout() {
                 `Pay ${formatCurrency(total)} Now`
               )}
             </button>
+            {import.meta.env.REACT_APP_COD_ENABLED === 'true' && (
+              <button className="btn btn-outline" disabled={loading} onClick={() => placeOrder('cod')}>
+                Place cash-on-delivery order
+              </button>
+            )}
             <p className="payment-note">
               🔒 Secure payment powered by CCAvenue
             </p>

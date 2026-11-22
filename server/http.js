@@ -35,11 +35,11 @@ export async function readBody(request, limit = 8192) {
   }
   return Buffer.concat(chunks).toString("utf8");
 }
-export async function readJson(request) {
+export async function readJson(request, limit) {
   if (!request.headers.get("content-type")?.startsWith("application/json"))
     throw new HttpError(415, "JSON is required.");
   try {
-    return JSON.parse(await readBody(request));
+    return JSON.parse(await readBody(request, limit));
   } catch (error) {
     if (error instanceof HttpError) throw error;
     throw new HttpError(400, "Invalid JSON.");

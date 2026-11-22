@@ -1,6 +1,7 @@
 import React, { useState } from "react";
 import "../styles/BlogPage.css"; // Import your new CSS file
-import logo from "../assets/GCMT-logo.png"; // Import logo image
+import NewsletterForm from "../components/NewsletterForm";
+import logo from "../assets/GCMT-logo.webp"; // Import logo image
 
 const BlogPage = () => {
   const [activeCategory, setActiveCategory] = useState("All");
@@ -125,11 +126,7 @@ const BlogPage = () => {
               className="search-input"
               aria-label="Search articles"
             />
-            <button className="search-btn" aria-label="Submit search">
-              <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
-              </svg>
-            </button>
+
           </div>
         </section>
 
@@ -162,12 +159,7 @@ const BlogPage = () => {
                 <span>•</span>
                 <span>Dr. Rajesh Mehta, PhD</span>
               </div>
-              <button className="featured-btn">
-                Read Full Study
-                <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
-                </svg>
-              </button>
+
             </div>
           </div>
         </article>
@@ -199,12 +191,7 @@ const BlogPage = () => {
                 </div>
                 <div className="post-footer">
                   <span className="post-author">{post.author}</span>
-                  <a href="#" className="read-more-btn">
-                    Read More 
-                    <svg className="read-more-icon" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
-                    </svg>
-                  </a>
+
                 </div>
               </div>
             </article>
@@ -220,27 +207,6 @@ const BlogPage = () => {
           </div>
         )}
 
-        {/* Pagination */}
-        {filteredPosts.length > 0 && (
-          <nav className="pagination" role="navigation" aria-label="Pagination">
-            <button className="pagination-btn active" aria-current="page">
-              1
-            </button>
-            <button className="pagination-btn">
-              2
-            </button>
-            <button className="pagination-btn">
-              3
-            </button>
-            <button className="pagination-btn">
-              Next 
-              <svg className="w-4 h-4 ml-1" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
-              </svg>
-            </button>
-          </nav>
-        )}
-
         {/* Newsletter Subscription */}
         <section className="newsletter">
           <div className="newsletter-content">
@@ -249,18 +215,7 @@ const BlogPage = () => {
               Subscribe to receive expert insights, seasonal wellness tips, and exclusive research updates 
               directly from our Ayurvedic practitioners and herbalists.
             </p>
-            <form className="newsletter-form" onSubmit={(e) => e.preventDefault()}>
-              <input
-                type="email"
-                placeholder="Enter your email address"
-                className="newsletter-input"
-                aria-label="Email address"
-                required
-              />
-              <button type="submit" className="newsletter-btn">
-                Subscribe Now
-              </button>
-            </form>
+            <NewsletterForm className="newsletter-form" inputClass="newsletter-input" buttonClass="newsletter-btn" buttonText="Subscribe Now" />
             <p className="newsletter-disclaimer">
               Join 50,000+ wellness enthusiasts. Unsubscribe anytime.
             </p>

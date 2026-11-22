@@ -8,7 +8,7 @@ import { Star, ShoppingCart, Eye, Heart, Zap } from 'lucide-react';
 import '../styles/ProductCard.css';
 import DefaultProductImage from '../assets/product.png';
 
-export default function ProductCard({ productId, hideAddToCart = false }) {
+export default function ProductCard({ productId, catalogProduct, hideAddToCart = false }) {
   const [product, setProduct] = useState(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
@@ -22,7 +22,7 @@ export default function ProductCard({ productId, hideAddToCart = false }) {
   useEffect(() => {
     async function fetchProduct() {
       setLoading(true);
-      const { data, error } = await supabase
+      const { data, error } = catalogProduct ? {data:catalogProduct} : await supabase
         .from('products')
         .select('*')
         .eq('id', productId)
@@ -35,7 +35,8 @@ export default function ProductCard({ productId, hideAddToCart = false }) {
         let imageUrl = DefaultProductImage;
         if (data.product_image) {
           const first = String(data.product_image).split(',')[0].trim();
-          if (/^https?:\/\//i.test(first)) imageUrl = first;
+          if (first.startsWith('/') && !first.startsWith('//')) imageUrl=first;
+          else if (/^https?:\/\//i.test(first)) imageUrl = first;
           else if (first) {
             const {data:imageData} = supabase.storage.from('product-image').getPublicUrl(first);
             imageUrl=imageData?.publicUrl || DefaultProductImage;
@@ -53,8 +54,9 @@ export default function ProductCard({ productId, hideAddToCart = false }) {
             : null,
           image: imageUrl,
           category: data.category,
-          rating: data.rating || 4.5,
-          inStock: data.in_stock !== false,
+          hasSizes: Boolean(data.size?.trim()),
+          rating: Number(data.rating),
+          inStock: data.in_stock !== false && (data.stock == null || data.stock > 0),
         };
         setProduct(productData);
       }
@@ -62,7 +64,7 @@ export default function ProductCard({ productId, hideAddToCart = false }) {
     }
 
     fetchProduct();
-  }, [productId]);
+  }, [productId,catalogProduct]);
 
   const handleCardClick = () => {
     navigate(`/product/${productId}`);
@@ -84,6 +86,7 @@ export default function ProductCard({ productId, hideAddToCart = false }) {
     e.stopPropagation();
     if (!product?.inStock || buyNowLoading) return;
 
+    if (product.hasSizes) { navigate(`/product/${productId}`); return; }
     setBuyNowLoading(true);
     const success = await addToCart(product.id, 1);
     setBuyNowLoading(false);
@@ -125,8 +128,7 @@ export default function ProductCard({ productId, hideAddToCart = false }) {
             alt={product.name}
             className="product-card__image"
             onError={(e) => {
-              e.target.onerror = null;
-              e.target.src = DefaultProductImage;
+              if (e.currentTarget.getAttribute('src') !== DefaultProductImage) e.currentTarget.src = DefaultProductImage;
             }}
           />
 
@@ -165,7 +167,7 @@ export default function ProductCard({ productId, hideAddToCart = false }) {
 
           <h3 className="product-card__name">{product.name}</h3>
 
-          <div className="product-card__rating">
+          {product.rating > 0 && product.rating <= 5 && <div className="product-card__rating">
             <div className="product-card__stars">
               {[...Array(5)].map((_, i) => (
                 <Star 
@@ -178,7 +180,7 @@ export default function ProductCard({ productId, hideAddToCart = false }) {
               ))}
             </div>
             <span className="product-card__rating-value">{product.rating}</span>
-          </div>
+          </div>}
 
           {product.shortDescription && (
             <p className="product-card__description">{product.shortDescription}</p>
@@ -199,7 +201,7 @@ export default function ProductCard({ productId, hideAddToCart = false }) {
 
       <div className="product-card__footer" onClick={(e) => e.stopPropagation()}>
         <div className={`product-card__button-group ${hideAddToCart ? 'product-card__button-group--single' : ''}`}>
-          {!hideAddToCart && (
+          {!hideAddToCart && !product.hasSizes && (
             <AddToCartButton 
               productId={product.id} 
               quantity={1} 

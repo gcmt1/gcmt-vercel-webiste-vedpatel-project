@@ -20,6 +20,7 @@ export default defineConfig({
     reuseExistingServer: false,
     timeout: 60000,
     env: {
+      REACT_APP_COD_ENABLED: "true",
       REACT_APP_SUPABASE_URL: "http://127.0.0.1:4173/supabase",
       REACT_APP_SUPABASE_ANON_KEY: "sb_publishable_local_test",
     },

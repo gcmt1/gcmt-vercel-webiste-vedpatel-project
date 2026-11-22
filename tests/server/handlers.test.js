@@ -2,12 +2,15 @@
 import { describe, it, expect, vi } from "vitest";
 import { createCheckoutHandler } from "../../server/checkout.js";
 import { createPaymentHandler } from "../../server/payment.js";
+import { gatewayReference } from "../../server/reference.js";
 import { createOrderLookup, createCodUpdate } from "../../server/orders.js";
 import { decryptResponse, encryptRequest } from "../../server/ccavenue.js";
 const userId = "11111111-1111-4111-8111-111111111111";
 const attemptId = "44444444-4444-4444-8444-444444444444";
 const env = {
+  CCA_ENVIRONMENT: "sandbox",
   SECURE_CHECKOUT_ENABLED: "true",
+  CCA_CALLBACKS_ENABLED: "true",
   SITE_URL: "https://shop.example.test",
   CCA_MERCHANT_ID: "merchant-test",
   CCA_ACCESS_CODE: "test-access",
@@ -38,8 +41,28 @@ function database(options = {}) {
       data:
         name === "consume_checkout_limit"
           ? (options.rateAllowed ?? true)
-          : { accepted: options.accepted ?? true, payment_status: "SUCCESS" },
-      error: null,
+          : name === "open_store_checkout"
+            ? options.order
+              ? { existing: true, payment_id: attemptId }
+              : options.cart
+                ? { invalid: true }
+                : {
+                    id: "order-1",
+                    total_paise: 18000,
+                    payment_id: attemptId,
+                    gateway_reference: gatewayReference(attemptId),
+                    generation: attemptId,
+                  }
+            : name === "release_store_handoff"
+              ? true
+              : {
+                  accepted: options.accepted ?? true,
+                  payment_status: options.recordedStatus || "SUCCESS",
+                },
+      error:
+        options.duplicate && name === "open_store_checkout"
+          ? { code: "23505" }
+          : null,
     })),
     from(table) {
       const filters = [];
@@ -116,7 +139,16 @@ function database(options = {}) {
   };
   return db;
 }
-const checkoutRequest = (body = { attemptId, shipping }, extra = {}) =>
+const quote = {
+  expectedPaise: 18000,
+  expectedLines: [
+    { productId: "p1", quantity: 2, variant: "", unitPaise: 9000 },
+  ],
+};
+const checkoutRequest = (
+  body = { attemptId, shipping, ...quote },
+  extra = {},
+) =>
   new Request("https://shop.example.test/api/create-order", {
     method: "POST",
     headers: {
@@ -137,6 +169,7 @@ const callbackRequest = (fields) =>
   });
 const callbackFields = {
   order_id: attemptId,
+  merchant_id: env.CCA_MERCHANT_ID,
   order_status: "Success",
   amount: "180.00",
   currency: "INR",
@@ -153,15 +186,16 @@ describe("authoritative checkout", () => {
     const fields = decryptResponse(payload.encRequest, env.CCA_WORKING_KEY);
     expect(fields.amount).toBe("180.00");
     expect(fields.redirect_url).toBe(env.SITE_URL + "/api/payment-response");
-    expect(db.writes[0].payload).toMatchObject({
-      user_id: userId,
-      total_amount: 180,
-      payment_status: "PENDING",
-      order_status: "PENDING",
+    expect(db.rpc).toHaveBeenCalledWith("open_store_checkout", {
+      p_owner: userId,
+      p_attempt: attemptId,
+      p_shipping: shipping,
+      p_expected: 18000,
+      p_lines: quote.expectedLines,
+      p_reference: fields.order_id,
     });
-    expect(
-      db.queries.find((x) => x.table === "cart_items").filters,
-    ).toContainEqual(["user_id", userId]);
+    expect(fields.order_id).toMatch(/^G[0-7][0-9a-v]{25}$/);
+    expect(payload.gatewayUrl).toContain("test.ccavenue.com");
   });
   it("rejects additional amount/status/user fields and malformed input before inserting", async () => {
     for (const body of [
@@ -210,7 +244,7 @@ describe("authoritative checkout", () => {
         await handler(
           checkoutRequest({
             attemptId,
-            shipping: { ...shipping, street: "x".repeat(9000) },
+            shipping: { ...shipping, street: "x".repeat(66000) },
           }),
         )
       ).status,
@@ -225,20 +259,15 @@ describe("authoritative checkout", () => {
     ).toBe(503);
     expect(db.writes).toHaveLength(0);
   });
-  it("rejects invalid cart quantities/stock and rate-limited attempts", async () => {
-    for (const quantity of [-1, 0, 1.5, 101]) {
-      const db = database({
-        cart: [{ product_id: "p", quantity, products: { product_price: 100 } }],
-      });
-      expect(
-        (
-          await createCheckoutHandler({ env, database: () => db })(
-            checkoutRequest(),
-          )
-        ).status,
-      ).toBe(400);
-      expect(db.writes).toHaveLength(0);
-    }
+  it("reports a changed catalog and rate-limited attempts without offering a handoff", async () => {
+    const invalid = database({ cart: [] });
+    expect(
+      (
+        await createCheckoutHandler({ env, database: () => invalid })(
+          checkoutRequest(),
+        )
+      ).status,
+    ).toBe(409);
     const db = database({ rateAllowed: false });
     expect(
       (
@@ -250,13 +279,14 @@ describe("authoritative checkout", () => {
   });
   it("does not initiate a second payment for an existing or concurrent attempt", async () => {
     const existing = database({ order: { id: "existing" } });
-    expect(
-      (
-        await createCheckoutHandler({ env, database: () => existing })(
-          checkoutRequest(),
-        )
-      ).status,
-    ).toBe(409);
+    const saved = await createCheckoutHandler({
+      env,
+      database: () => existing,
+    })(checkoutRequest());
+    expect(await saved.json()).toEqual({
+      existing: true,
+      paymentId: attemptId,
+    });
     expect(existing.writes).toHaveLength(0);
     const raced = database({ duplicate: true });
     expect(
@@ -278,8 +308,9 @@ describe("payment response boundary", () => {
     expect(response.headers.get("location")).toBe(
       env.SITE_URL + "/payment-success?payment_id=" + attemptId,
     );
-    expect(db.rpc).toHaveBeenCalledWith("record_gateway_payment", {
+    expect(db.rpc).toHaveBeenCalledWith("record_store_response", {
       p_payment_id: attemptId,
+      p_reference: attemptId,
       p_amount_paise: 18000,
       p_currency: "INR",
       p_status: "SUCCESS",
@@ -312,6 +343,7 @@ describe("payment response boundary", () => {
     for (const fields of [
       { ...callbackFields, currency: "USD" },
       { ...callbackFields, merchant_id: "other" },
+      { ...callbackFields, merchant_id: "" },
       { ...callbackFields, amount: "1e2" },
       { ...callbackFields, order_status: "Awaited" },
       { ...callbackFields, tracking_id: "" },
@@ -382,7 +414,11 @@ describe("order and admin access", () => {
   it("checks the database admin role before allowing COD payment changes", async () => {
     const db = database();
     const request = () =>
-      checkoutRequest({ orderId: "order-1", status: "SUCCESS" });
+      checkoutRequest({
+        orderId: "order-1",
+        status: "SUCCESS",
+        note: "receipt-fixture",
+      });
     expect(
       (await createCodUpdate({ env, database: () => db })(request())).status,
     ).toBe(403);
@@ -391,8 +427,118 @@ describe("order and admin access", () => {
     expect(
       (await createCodUpdate({ env, database: () => admin })(request())).status,
     ).toBe(200);
-    expect(admin.queries.find((q) => q.op === "update").filters).toContainEqual(
-      ["payment_id", "COD-%"],
-    );
+    expect(admin.rpc).toHaveBeenCalledWith("collect_store_cod", {
+      p_order: "order-1",
+      p_actor: userId,
+      p_note: "receipt-fixture",
+    });
   });
+});
+
+it("decodes legacy UUIDs and all 128 bits of compact references", async () => {
+  const { internalReference, gatewayReference } =
+    await import("../../server/reference.js");
+  for (const id of [
+    attemptId,
+    "ffffffff-ffff-4fff-bfff-ffffffffffff",
+    "00000000-0000-4000-8000-000000000000",
+  ]) {
+    expect(internalReference(gatewayReference(id))).toBe(id);
+    expect(internalReference(id)).toBe(id);
+  }
+  for (const value of ["G" + "v".repeat(26), "G123", "G" + "0".repeat(26)])
+    expect(internalReference(value)).toBeNull();
+});
+it("rejects live initiation outside the merchant deployment and can still record callbacks with initiation paused", async () => {
+  const db = database();
+  expect(
+    (
+      await createCheckoutHandler({
+        env: { ...env, CCA_ENVIRONMENT: "production" },
+        database: () => db,
+      })(checkoutRequest())
+    ).status,
+  ).toBe(503);
+  expect(
+    (
+      await createPaymentHandler({
+        env: { ...env, SECURE_CHECKOUT_ENABLED: "false" },
+        database: () => db,
+      })(callbackRequest(callbackFields))
+    ).status,
+  ).toBe(303);
+});
+it("keeps inquiry disabled without a merchant transport and records only matched independent evidence", async () => {
+  const { reconcileBatch } = await import("../../server/reconciliation.js");
+  const { gatewayReference } = await import("../../server/reference.js");
+  const ref = gatewayReference(attemptId);
+  const db = {
+    rpc: vi.fn(async (name) =>
+      name === "claim_store_inquiries"
+        ? { data: [{ payment_id: attemptId, gateway_reference: ref }] }
+        : { data: { accepted: true } },
+    ),
+  };
+  expect(await reconcileBatch({ database: db })).toMatchObject({
+    configured: false,
+  });
+  expect(db.rpc).not.toHaveBeenCalled();
+  for (const result of [
+    null,
+    { ...callbackFields, order_id: "other" },
+    { ...callbackFields, order_id: ref, merchant_id: "other" },
+  ]) {
+    expect(
+      await reconcileBatch({
+        database: db,
+        merchantId: "fixture",
+        inquire: async () => result,
+      }),
+    ).toMatchObject({ recorded: 0 });
+  }
+  expect(
+    await reconcileBatch({
+      database: db,
+      merchantId: "fixture",
+      inquire: async () => ({
+        ...callbackFields,
+        order_id: ref,
+        merchant_id: "fixture",
+      }),
+    }),
+  ).toMatchObject({ recorded: 1 });
+});
+
+it.each(["Failure", "Aborted", "Invalid"])(
+  "records %s without presenting a successful payment",
+  async (order_status) => {
+    const db = database({ recordedStatus: "FAILED" });
+    const handler = createPaymentHandler({ env, database: () => db });
+    const response = await handler(
+      callbackRequest({ ...callbackFields, order_status, tracking_id: "" }),
+    );
+    expect(response.status).toBe(303);
+    expect(response.headers.get("location")).toContain("/payment-cancel?");
+    expect(db.rpc).toHaveBeenCalledWith(
+      "record_store_response",
+      expect.objectContaining({ p_status: "FAILED" }),
+    );
+  },
+);
+it("blocks COD by default and refuses an online handoff while callback recording is unavailable", async () => {
+  const db = database();
+  const handler = createCheckoutHandler({
+    env: { ...env, CCA_CALLBACKS_ENABLED: "false" },
+    database: () => db,
+  });
+  for (const method of [{}, { method: "cod" }]) {
+    expect(
+      (
+        await handler(
+          checkoutRequest({ attemptId, shipping, ...quote, ...method }),
+        )
+      ).status,
+    ).toBe(503);
+  }
+  expect(db.rpc).not.toHaveBeenCalled();
 });

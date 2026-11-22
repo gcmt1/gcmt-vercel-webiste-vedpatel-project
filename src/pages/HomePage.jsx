@@ -4,11 +4,12 @@ import ProductCard from '../components/ProductCard';
 import { supabase } from '../supabaseClient'; // Import supabase client
 import '../styles/HomePage.css';
 import GCMTVideo from '../assets/marketing-video.mp4'; // Import marketing video
-import GCMTLogo from '../assets/GCMT-logo.png';
+import GCMTLogo from '../assets/GCMT-logo.webp';
 import { redirect } from 'react-router-dom';
 
 const HomePage = () => {
   const [products, setProducts] = useState([]);
+  const [loadError, setLoadError] = useState(false);
   const [loading, setLoading] = useState(true);
   const [activeTestimonial, setActiveTestimonial] = useState(0);
   const [isVideoModalOpen, setIsVideoModalOpen] = useState(false);
@@ -65,22 +66,20 @@ const HomePage = () => {
   ];
 
   useEffect(() => {
-    const fetchProducts = async () => {
-      setLoading(true);
-      const { data, error } = await supabase
-        .from('products')
-        .select('*')
-        .limit(3); // Fetch only 3 products for the homepage
-      
-      if (error) {
-        console.error('Error fetching products:', error.message);
-      } else {
-        setProducts(data);
+    let active = true;
+    async function fetchProducts() {
+      try {
+        const { data, error } = await supabase.from('products').select('*').limit(3);
+        if (error) throw error;
+        if (active) setProducts(data || []);
+      } catch {
+        if (active) setLoadError(true);
+      } finally {
+        if (active) setLoading(false);
       }
-      setLoading(false);
-    };
-
+    }
     fetchProducts();
+    return () => { active = false; };
   }, []);
 
   useEffect(() => {
@@ -207,9 +206,9 @@ const HomePage = () => {
                 <div className="loading-spinner" />
                 <p>Loading our amazing products...</p>
               </div>
-            ) : (
+            ) : loadError ? <p role="alert">Featured products could not be loaded. Refresh to try again.</p> : (
               products.map((product) => (
-                <ProductCard key={product.id} productId={product.id} hideAddToCart />
+                <ProductCard key={product.id} productId={product.id} catalogProduct={product} hideAddToCart />
               ))
             )}
           </div>

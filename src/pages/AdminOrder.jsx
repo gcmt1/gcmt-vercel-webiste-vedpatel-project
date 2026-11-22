@@ -1,3 +1,4 @@
+import { orderItems, paidOrderTotal } from "../utils/orders";
 import { authenticatedFetch } from '../utils/api';
 import React, { useEffect, useState, useCallback, useMemo, memo, useRef } from 'react';
 import { supabase } from '../supabaseClient';
@@ -29,7 +30,7 @@ const STATUS_CONFIG = {
 };
 
 // COD Payment status options (what admin can update COD orders to)
-const COD_PAYMENT_STATUSES = ['SUCCESS', 'COD_PENDING'];
+const COD_PAYMENT_STATUSES = ['SUCCESS'];
 
 const DATE_FILTERS = [
   { value: 'ALL', label: 'All Time', icon: Calendar },
@@ -68,6 +69,7 @@ const canUpdatePaymentStatus = (paymentId) => {
 };
 
 const formatCurrency = (amount) => {
+  if (amount == null || !Number.isFinite(Number(amount))) return "Unavailable";
   return new Intl.NumberFormat('en-IN', {
     style: 'currency',
     currency: 'INR',
@@ -446,10 +448,7 @@ const OrderCard = memo(({
   isUpdating,
   isUpdatingPayment // NEW
 }) => {
-  const totalAmount = useMemo(() => {
-    if (!order.product_list || !Array.isArray(order.product_list)) return 0;
-    return order.product_list.reduce((sum, item) => sum + (item.total_price || 0), 0);
-  }, [order.product_list]);
+  const totalAmount = order?.total_amount;
 
   const itemCount = order.product_list?.length || 0;
   const isCOD = isCODOrder(order.payment_id);
@@ -561,11 +560,11 @@ const OrderCard = memo(({
         <button
           onClick={() => onDelete(order.id)}
           className="apm-btn apm-btn--danger apm-btn--icon-text"
-          aria-label={`Delete order ${order.id}`}
+          aria-label={`Archive order ${order.id}`}
           type="button"
         >
           <Trash2 size={16} />
-          <span>Delete</span>
+          <span>Archive</span>
         </button>
       </div>
     </article>
@@ -583,11 +582,7 @@ const OrderDetailsModal = memo(({
 }) => {
   // ✅ Move ALL hooks BEFORE any conditional returns
   
-  const totalAmount = useMemo(() => {
-    // Handle null/undefined order safely inside useMemo
-    if (!order?.product_list || !Array.isArray(order.product_list)) return 0;
-    return order.product_list.reduce((sum, item) => sum + (item.total_price || 0), 0);
-  }, [order?.product_list]); // Use optional chaining in dependency
+  const totalAmount = order?.total_amount;
 
   const handleKeyDown = useCallback((e) => {
     if (e.key === 'Escape') {
@@ -699,7 +694,7 @@ const OrderDetailsModal = memo(({
                 {order.product_list.map((item, index) => (
                   <div key={index} className="apm-product-list__item">
                     <span className="apm-product-list__name">
-                      {item.name || 'Unknown Item'}
+                      {item.name || 'Unknown Item'}{item.variant && ` · ${item.variant}`}
                     </span>
                     <span className="apm-product-list__qty">×{item.quantity || 1}</span>
                     <span className="apm-product-list__price">
@@ -844,7 +839,7 @@ const DeleteConfirmModal = memo(({ orderId, onConfirm, onCancel }) => {
         <header className="apm-modal__header apm-modal__header--danger">
           <h2 id="delete-modal-title" className="apm-modal__title">
             <AlertCircle size={24} />
-            Confirm Deletion
+            Archive order
           </h2>
           <button 
             onClick={onCancel}
@@ -862,10 +857,10 @@ const DeleteConfirmModal = memo(({ orderId, onConfirm, onCancel }) => {
               <Trash2 size={48} />
             </div>
             <p className="apm-confirm-message">
-              Are you sure you want to delete <strong>Order #{orderId}</strong>?
+              Are you sure you want to archive <strong>Order #{orderId}</strong>?
             </p>
             <p className="apm-confirm-warning">
-              This action cannot be undone. All order data will be permanently removed.
+              The order will leave the active staff list. Its payment history and customer receipt remain available.
             </p>
           </div>
         </div>
@@ -884,7 +879,7 @@ const DeleteConfirmModal = memo(({ orderId, onConfirm, onCancel }) => {
             type="button"
           >
             <Trash2 size={16} />
-            Delete Order
+            Archive Order
           </button>
         </footer>
       </div>
@@ -1042,12 +1037,13 @@ export default function AdminProductManagement() {
         .select(`
           id, user_id, user_name, user_email, user_phone,
           address_line, city, state, postal_code, product_list,
-          payment_id, payment_status, order_status, created_at, guest_identifier
+          payment_id, payment_status, order_status, total_amount, created_at, guest_identifier
         `)
+        .is('archived_at',null)
         .order('created_at', { ascending: false });
 
       if (error) throw error;
-      setOrders(data || []);
+      setOrders((data || []).map(order => ({...order, product_list:orderItems(order.product_list)})));
     } catch (error) {
       console.error('Error fetching orders:', error);
       showNotification('Failed to load orders. Please try again.', 'error');
@@ -1180,14 +1176,7 @@ export default function AdminProductManagement() {
     isCODOrder(order.payment_id) && normalizeStatus(order.payment_status) === 'COD_PENDING'
   ).length;
 
-    const totalRevenue = filteredOrders.reduce((total, order) => {
-      if (order.product_list && Array.isArray(order.product_list)) {
-        return total + order.product_list.reduce((sum, item) => 
-          sum + (item.total_price || 0), 0
-        );
-      }
-      return total;
-    }, 0);
+    const totalRevenue = paidOrderTotal(filteredOrders);
 
     const groupedOrders = filteredOrders.reduce((groups, order) => {
       const date = new Date(order.created_at);
@@ -1261,7 +1250,7 @@ export default function AdminProductManagement() {
       const { error } = await supabase
         .from('orders')
         .update({ order_status: statusValue })
-        .eq('id', orderId);
+        .eq('id', orderId).select('id').single();
 
       if (error) throw error;
 
@@ -1313,10 +1302,12 @@ export default function AdminProductManagement() {
       return;
     }
 
+    const note = window.prompt('Enter the collection receipt reference (3–160 characters).');
+    if (!note || note.trim().length < 3 || note.length > 160) return;
     setUpdatingPayments(prev => new Set([...prev, orderId]));
 
     try {
-      await authenticatedFetch('/api/cod-payment', { method: 'POST', body: JSON.stringify({orderId, status:newStatus.toUpperCase()}) });
+      await authenticatedFetch('/api/cod-payment', { method: 'POST', body: JSON.stringify({orderId, status:newStatus.toUpperCase(),note}) });
 
       setOrders(prev => prev.map(order => 
         order.id === orderId 
@@ -1355,8 +1346,8 @@ export default function AdminProductManagement() {
     try {
       const { error } = await supabase
         .from('orders')
-        .delete()
-        .eq('id', orderId);
+        .update({archived_at:new Date().toISOString()})
+        .eq('id', orderId).select('id').single();
       
       if (error) throw error;
 
@@ -1374,10 +1365,10 @@ export default function AdminProductManagement() {
         }));
       }
 
-      showNotification('Order deleted successfully');
+      showNotification('Order archived successfully');
     } catch (error) {
       console.error('Error deleting order:', error);
-      showNotification('Failed to delete order', 'error');
+      showNotification('Failed to archive order', 'error');
     }
     
     setModals(prev => ({ 
@@ -1390,19 +1381,20 @@ export default function AdminProductManagement() {
     if (selectedOrders.size === 0) return;
 
     try {
-      const { error } = await supabase
+      const { data, error } = await supabase
         .from('orders')
-        .delete()
-        .in('id', Array.from(selectedOrders));
+        .update({archived_at:new Date().toISOString()})
+        .in('id', Array.from(selectedOrders)).select('id');
 
       if (error) throw error;
 
-      setOrders(prev => prev.filter(order => !selectedOrders.has(order.id)));
+      const archived = new Set(data.map(row => row.id));
+      setOrders(prev => prev.filter(order => !archived.has(order.id)));
       setSelectedOrders(new Set());
-      showNotification(`${selectedOrders.size} orders deleted successfully`);
+      showNotification(`${archived.size} orders archived`);
     } catch (error) {
       console.error('Error deleting orders:', error);
-      showNotification('Failed to delete orders', 'error');
+      showNotification('Failed to archive orders', 'error');
     }
   }, [selectedOrders, showNotification]);
 
@@ -1501,7 +1493,7 @@ export default function AdminProductManagement() {
                 {filteredOrders.length} {filteredOrders.length === 1 ? 'order' : 'orders'}
               </span>
               <span className="apm-header__stat apm-header__stat--highlight">
-                {formatCurrency(analytics.totalRevenue)} revenue
+                Paid order total {formatCurrency(analytics.totalRevenue)}
               </span>
               {analytics.statusCounts.PROCESSING > 0 && (
                 <span className="apm-header__stat apm-header__stat--warning">
@@ -1543,7 +1535,7 @@ export default function AdminProductManagement() {
                   type="button"
                 >
                   <Trash2 size={18} />
-                  <span>Delete ({selectedOrders.size})</span>
+                  <span>Archive ({selectedOrders.size})</span>
                 </button>
               </div>
             )}

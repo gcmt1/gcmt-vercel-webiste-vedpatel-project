@@ -1,9 +1,10 @@
+import DefaultProductImage from "../assets/product.png";
 import React, { useState, useEffect } from 'react';
 import { supabase } from '../supabaseClient';
 import { useAppContext } from '../AppContext';
 import { useToast } from '../components/ToastContext';
 import { useNavigate } from 'react-router-dom';
-import { loadCart, writeGuestCart, validQuantity } from '../utils/cart';
+import { loadCart, readGuestCart, writeGuestCart, withGuestCart, cartKey, validQuantity } from '../utils/cart';
 import '../styles/CartPage.css';
 import { Trash2, Minus, Plus, ShoppingBag, ArrowLeft, Lock, Truck, Shield } from 'lucide-react';
 function CartPage() {
@@ -20,26 +21,36 @@ function CartPage() {
     loadCart(user?.id,supabase).then(items=>{if(active)setCartItems(items);}).catch(()=>showToast('Failed to load cart','error')).finally(()=>{if(active)setLoading(false);});
     return ()=>{active=false;};
   },[user?.id,userLoading,showToast]);
-  const updateQuantity = async (productId,change) => {
-    const item=cartItems.find(item=>item.productId===productId); const quantity=item.quantity+change;
-    if(!validQuantity(quantity))return;
-    setUpdateLoading(productId);
+  async function changeItem(item, change) {
+    const key = cartKey(item);
+    const quantity = item.quantity + change;
+    if (change && !validQuantity(quantity)) return;
+    const setBusy = change ? setUpdateLoading : setRemoveLoading;
+    setBusy(key);
     try {
-      const updated=cartItems.map(row=>row.productId===productId?{...row,quantity}:row);
-      if(user){const {error}=await supabase.from('cart_items').update({quantity}).eq('product_id',productId).eq('user_id',user.id);if(error)throw error;}
-      else writeGuestCart(updated.map(({productId,quantity})=>({productId,quantity})));
-      setCartItems(updated);window.dispatchEvent(new Event('cart-changed'));
-    }catch{showToast('Unable to update the cart.','error');}finally{setUpdateLoading(null);}
-  };
-  const removeItem = async productId => {
-    setRemoveLoading(productId);
-    try {
-      const updated=cartItems.filter(row=>row.productId!==productId);
-      if(user){const {error}=await supabase.from('cart_items').delete().eq('product_id',productId).eq('user_id',user.id);if(error)throw error;}
-      else writeGuestCart(updated.map(({productId,quantity})=>({productId,quantity})));
-      setCartItems(updated);window.dispatchEvent(new Event('cart-changed'));
-    }catch{showToast('Unable to remove the item.','error');}finally{setRemoveLoading(null);}
-  };
+      if (user) {
+        const table = supabase.from('cart_items');
+        const mutation = change ? table.update({quantity}) : table.delete();
+        const {data,error} = await mutation.eq('id',item.id).eq('user_id',user.id)
+          .eq('quantity',item.quantity).select('id').maybeSingle();
+        if (error || !data) throw new Error('Cart changed. Review the current quantities.');
+      } else {
+        await withGuestCart(() => {
+          const rows = readGuestCart();
+          const current = rows.find(row => cartKey(row) === key);
+          if (!current || current.quantity !== item.quantity) throw new Error('Cart changed. Review the current quantities.');
+          if (change) current.quantity = quantity;
+          writeGuestCart(change ? rows : rows.filter(row=>cartKey(row)!==key));
+        });
+      }
+      window.dispatchEvent(new Event('cart-changed'));
+    } catch (error) { showToast(error.message || 'Unable to update the cart.','error'); }
+    finally {
+      try { setCartItems(await loadCart(user?.id,supabase)); }
+      catch { showToast('Unable to refresh the cart.','error'); }
+      setBusy(null);
+    }
+  }
   const handlePlaceOrder = ()=>{if(cartItems.length)navigate('/checkout');else showToast('Your cart is empty.','error');};
   const calculateTotal=()=>cartItems.reduce((sum,item)=>sum+item.price*item.quantity,0);
   const calculateSubtotal=(price,quantity)=>price*quantity;
@@ -127,21 +138,21 @@ function CartPage() {
             <div className="cart-items-section">
               <div className="cart-items-container">
                 {cartItems.map(item => (
-                  <div key={item.productId} className="cart-item">
+                  <div key={cartKey(item)} className="cart-item">
                     <div className="cart-item-content">
                       <div className="cart-item-main">
                         <div className="cart-item-image-container">
                           <img
-                            src={item.image}
+                            src={item.image || DefaultProductImage}
                             alt={item.name}
                             className="cart-item-image"
                             onError={(e) => {
-                              e.target.src = '/placeholder-image.png';
+                              if (e.currentTarget.getAttribute('src') !== DefaultProductImage) e.currentTarget.src = DefaultProductImage;
                             }}
                           />
                         </div>
                         <div className="cart-item-details">
-                          <h3 className="cart-item-name">{item.name}</h3>
+                          <h3 className="cart-item-name">{item.name}{item.variant && ` · ${item.variant}`}</h3>
                           <p className="cart-item-price">
                             ₹{item.price.toLocaleString('en-IN', { minimumFractionDigits: 2 })}
                           </p>
@@ -152,14 +163,14 @@ function CartPage() {
                           <button
                             type="button"
                             className="quantity-button"
-                            onClick={() => updateQuantity(item.productId, -1)}
-                            disabled={item.quantity === 1 || updateLoading === item.productId}
+                            onClick={() => changeItem(item, -1)}
+                            disabled={item.quantity === 1 || updateLoading === cartKey(item)}
                             aria-label={`Decrease quantity of ${item.name}`}
                           >
                             <Minus size={16} />
                           </button>
                           <div className="quantity-display">
-                            {updateLoading === item.productId ? (
+                            {updateLoading === cartKey(item) ? (
                               <div className="quantity-loading"></div>
                             ) : (
                               item.quantity
@@ -168,8 +179,8 @@ function CartPage() {
                           <button
                             type="button"
                             className="quantity-button"
-                            onClick={() => updateQuantity(item.productId, 1)}
-                            disabled={updateLoading === item.productId}
+                            onClick={() => changeItem(item, 1)}
+                            disabled={updateLoading === cartKey(item)}
                             aria-label={`Increase quantity of ${item.name}`}
                           >
                             <Plus size={16} />
@@ -183,11 +194,11 @@ function CartPage() {
                         <button
                           type="button"
                           className="remove-button"
-                          onClick={() => removeItem(item.productId)}
-                          disabled={removeLoading === item.productId}
+                          onClick={() => changeItem(item, 0)}
+                          disabled={removeLoading === cartKey(item)}
                           aria-label={`Remove ${item.name} from cart`}
                         >
-                          {removeLoading === item.productId ? (
+                          {removeLoading === cartKey(item) ? (
                             <div className="remove-loading"></div>
                           ) : (
                             <Trash2 size={16} />

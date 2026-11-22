@@ -1,19 +1,33 @@
+import { orderItems } from "../utils/orders";
 import { escapeHtml } from '../utils/security';
 import jsPDF from 'jspdf';
 import html2canvas from 'html2canvas';
-import logo from '../assets/GCMT-logo.png'; // Make sure this path is correct and logo is imported
+import logo from '../assets/GCMT-logo.webp'; // Make sure this path is correct and logo is imported
 
 export async function generateInvoicePDF(rawOrder) {
-  const order = Object.fromEntries(Object.entries(rawOrder).map(([key,value]) => [key, typeof value === 'string' && key !== 'product_list' ? escapeHtml(value) : value]));
+  const order = Object.fromEntries(Object.entries(rawOrder).map(([key,value]) => [key, escapeHtml(value)]));
   // Fixing the product list parsing
-  const rawProducts = Array.isArray(rawOrder.product_list) ? rawOrder.product_list : JSON.parse(rawOrder.product_list);
-  const productList = rawProducts.map(item => Object.fromEntries(Object.entries(item).map(([key,value]) => [key, typeof value === 'string' ? escapeHtml(value) : value])));
+  const rawProducts = orderItems(rawOrder.product_list);
+  const productList = rawProducts.map(item => Object.fromEntries(Object.entries(item).map(([key,value]) => [key, escapeHtml(value)])));
 
   // Calculate totals
-  const subtotal = productList.reduce((sum, p) => sum + parseFloat(p.total_price), 0);
-  const taxRate = 0; // 18% GST (adjust as needed)
-  const taxAmount = subtotal * taxRate;
-  const totalAmount = subtotal + taxAmount;
+  const paise = value => {
+    if (!/^\d+(?:\.\d+)?$/.test(String(value))) return NaN;
+    const scaled = Number(value) * 100;
+    const rounded = Math.round(scaled);
+    return Number.isSafeInteger(rounded) && Math.abs(scaled - rounded) < 0.00001 ? rounded : NaN;
+  };
+  const subtotalPaise = productList.reduce((sum, item) => {
+    const unit = paise(item.unit_price);
+    const line = paise(item.total_price);
+    const quantity = Number(item.quantity);
+    if (!Number.isSafeInteger(quantity) || quantity <= 0 || unit * quantity !== line) return NaN;
+    return sum + line;
+  }, 0);
+  if (!productList.length || !Number.isSafeInteger(subtotalPaise) || subtotalPaise !== paise(rawOrder.total_amount))
+    throw new Error("The order totals need review before an invoice can be generated.");
+  const subtotal = subtotalPaise / 100;
+  const totalAmount = Number(rawOrder.total_amount);
 
   // Format currency function
   const formatCurrency = (amount) => `₹${parseFloat(amount).toLocaleString('en-IN', { minimumFractionDigits: 2 })}`;
@@ -42,7 +56,7 @@ export async function generateInvoicePDF(rawOrder) {
           .map(
             (p, index) => `
           <tr style="border-bottom: 1px solid #e9ecef; ${index % 2 === 0 ? 'background-color: #f8f9fa;' : 'background-color: white;'}">
-            <td style="padding: 10px 12px; color: #2c3e50; font-weight: 500; border-right: 1px solid #e9ecef;">${p.name}</td>
+            <td style="padding: 10px 12px; color: #2c3e50; font-weight: 500; border-right: 1px solid #e9ecef;">${p.name}${p.variant ? " · " + p.variant : ""}</td>
             <td style="padding: 10px 12px; text-align: center; color: #6c757d; border-right: 1px solid #e9ecef; font-weight: 500;">${p.quantity}</td>
             <td style="padding: 10px 12px; text-align: right; color: #6c757d; border-right: 1px solid #e9ecef;">${formatCurrency(p.unit_price)}</td>
             <td style="padding: 10px 12px; text-align: right; font-weight: 600; color: #2c3e50;">${formatCurrency(p.total_price)}</td>
@@ -61,8 +75,8 @@ export async function generateInvoicePDF(rawOrder) {
           <span style="color: #2c3e50; font-weight: 600;">${formatCurrency(subtotal)}</span>
         </div>
         <div style="display: flex; justify-content: space-between; padding: 10px 16px; border-bottom: 1px solid #e9ecef; font-size: 13px;">
-          <span style="color: #6c757d; font-weight: 500;">Tax:</span>
-          <span style="color: #2c3e50; font-weight: 600;">${formatCurrency(taxAmount)}</span>
+          <span style="color: #6c757d; font-weight: 500;">Tax breakdown:</span>
+          <span style="color: #2c3e50; font-weight: 600;">Unavailable</span>
         </div>
         <div style="display: flex; justify-content: space-between; padding: 12px 16px; background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: white; font-size: 16px; font-weight: 700; border-radius: 0 0 6px 6px;">
           <span>Total Amount:</span>
@@ -197,16 +211,9 @@ export async function generateInvoicePDF(rawOrder) {
     const imgWidth = pdfWidth;
     const imgHeight = (canvas.height * pdfWidth) / canvas.width;
 
-    // Scale down if content is too tall for one page
-    if (imgHeight > pdfHeight) {
-      const scaleFactor = pdfHeight / imgHeight;
-      const scaledWidth = imgWidth * scaleFactor;
-      const scaledHeight = pdfHeight;
-      const xOffset = (pdfWidth - scaledWidth) / 2;
-      
-      pdf.addImage(imgData, 'PNG', xOffset, 0, scaledWidth, scaledHeight);
-    } else {
-      pdf.addImage(imgData, 'PNG', 0, 0, imgWidth, imgHeight);
+    for (let offset = 0; offset < imgHeight; offset += pdfHeight) {
+      if (offset) pdf.addPage();
+      pdf.addImage(imgData, 'PNG', 0, -offset, imgWidth, imgHeight);
     }
 
     // Save with professional filename

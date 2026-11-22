@@ -1,7 +1,7 @@
 // @vitest-environment node
 import { spawnSync } from "node:child_process";
 import { expect, it } from "vitest";
-import { publicSupabaseUrl } from "../../src/config/public.js";
+const publicSupabaseUrl = "https://configured.example.test";
 
 function checkEnvironment(configuration = {}, args = []) {
   const env = { ...process.env };
@@ -56,5 +56,5 @@ it.each(["REACT_APP_SUPABASE_URL", "REACT_APP_SUPABASE_ANON_KEY"])(
 it("continues to block a release without the required server configuration", () => {
   const result = checkEnvironment({}, ["--release"]);
   expect(result.status).toBe(1);
-  expect(result.stderr).toContain("Missing required server configuration");
+  expect(result.stderr).toContain("REACT_APP_SUPABASE_URL");
 });

@@ -1,3 +1,4 @@
+import { formatOrderAmount, orderItems } from "../utils/orders";
 import React, { useEffect, useState } from 'react';
 import { supabase } from '../supabaseClient';
 import { useAppContext } from '../AppContext';
@@ -26,7 +27,12 @@ import styles from '../styles/YourOrders.module.css';
 
 
 const YourOrders = () => {
-  const { user } = useAppContext();
+  const { user, loading } = useAppContext();
+  if (loading) return <p role="status">Loading your account…</p>;
+  return <OrderHistory key={user?.id || 'signed-out'} user={user} />;
+};
+
+const OrderHistory = ({user}) => {
   const [orders, setOrders] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
@@ -48,6 +54,7 @@ const YourOrders = () => {
 
     try {
       setRefreshing(true);
+      setError('');
       
       // Fetch orders based on actual database structure from checkout
       const { data, error } = await supabase
@@ -58,7 +65,7 @@ const YourOrders = () => {
 
       if (error) throw error;
       
-      setOrders(data || []);
+      setOrders((data || []).map(order => ({...order, product_list:orderItems(order.product_list)})));
     } catch (err) {
       console.error('Error fetching orders:', err);
       setError('Failed to load orders. Please try again later.');
@@ -125,7 +132,9 @@ const YourOrders = () => {
     }
   };
 
-  const getPaymentModeDisplay = (paymentStatus) => {
+  const getPaymentModeDisplay = (order) => {
+    if (order.payment_id?.startsWith("COD-")) return "Cash on Delivery";
+    const paymentStatus = order.payment_status;
     switch (paymentStatus?.toLowerCase()) {
       case 'cash_on_delivery':
         return 'Cash on Delivery';
@@ -151,15 +160,9 @@ const YourOrders = () => {
     });
   };
 
-  const formatCurrency = (amount) => {
-    if (!amount) return '₹0.00';
-    return new Intl.NumberFormat('en-IN', {
-      style: 'currency',
-      currency: 'INR'
-    }).format(amount);
-  };
-
+  const opener = React.useRef(null);
   const openOrderDetails = (order) => {
+    opener.current = document.activeElement;
     setSelectedOrder(order);
     setShowModal(true);
   };
@@ -167,6 +170,7 @@ const YourOrders = () => {
   const closeOrderDetails = () => {
     setSelectedOrder(null);
     setShowModal(false);
+    opener.current?.focus();
   };
 
   const getOrderSummary = (productList) => {
@@ -185,19 +189,16 @@ const YourOrders = () => {
   };
 
   const getDeliveryEstimate = (order) => {
-    if (order.estimated_delivery_date) {
-      return `Expected by ${formatDate(order.estimated_delivery_date)}`;
+    const status = order.order_status?.toUpperCase();
+    if (status === 'DELIVERED') {
+      return order.delivered_at ? `Delivered on ${formatDate(order.delivered_at)}` : 'Delivered';
     }
-    if (order.order_status?.toLowerCase() === 'delivered' && order.delivered_at) {
-      return `Delivered on ${formatDate(order.delivered_at)}`;
-    }
-    if (order.order_status?.toLowerCase() === 'shipped') {
-      return 'Package is on the way';
-    }
-    if (order.order_status?.toLowerCase() === 'confirmed') {
-      return 'Order confirmed, preparing for shipment';
-    }
-    return 'Processing your order';
+    if (['CANCELLED', 'RETURNED', 'REFUNDED'].includes(status)) return 'No delivery expected';
+    if (order.estimated_delivery_date) return `Expected by ${formatDate(order.estimated_delivery_date)}`;
+    if (status === 'SHIPPED') return 'Package is on the way';
+    if (status === 'CONFIRMED') return 'Order confirmed, preparing for shipment';
+    if (status === 'PROCESSING') return 'Processing your order';
+    return 'Delivery estimate unavailable';
   };
 
   const refreshOrders = () => {
@@ -224,7 +225,7 @@ const YourOrders = () => {
           <Package className={styles.largeIcon} />
           <h2 className={styles.messageTitle}>Sign In Required</h2>
           <p className={styles.messageText}>Please log in to view your order history.</p>
-          <a href="/login" className={styles.primaryButton}>
+          <a href="/auth?returnTo=/your-orders" className={styles.primaryButton}>
             Sign In
           </a>
         </div>
@@ -305,13 +306,13 @@ const YourOrders = () => {
                   <div className={styles.orderStatus}>
                     {getStatusIcon(order.order_status)}
                     <span className={`${styles.statusBadge} ${getStatusClass(order.order_status)}`}>
-                      {order.order_status?.replace('_', ' ').toUpperCase() || 'PROCESSING'}
+                      {order.order_status?.replace('_', ' ').toUpperCase() || 'UNKNOWN'}
                     </span>
                   </div>
                   <div className={styles.paymentStatus}>
                     {getPaymentStatusIcon(order.payment_status)}
                     <span className={styles.paymentStatusText}>
-                      {getPaymentModeDisplay(order.payment_status)}
+                      {getPaymentModeDisplay(order)}
                     </span>
                   </div>
                 </div>
@@ -331,7 +332,7 @@ const YourOrders = () => {
                     <div className={styles.totalAmount}>
                       <span className={styles.totalLabel}>Total:</span>
                       <span className={styles.totalValue}>
-                        {formatCurrency(order.total_amount)}
+                        {formatOrderAmount(order.total_amount)}
                       </span>
                     </div>
                   </div>
@@ -364,13 +365,7 @@ const YourOrders = () => {
                   </button>
                   
                   {order.order_status?.toLowerCase() === 'shipped' && order.tracking_number && (
-                    <button
-                      onClick={() => window.open(`/track/${order.tracking_number}`, '_blank')}
-                      className={styles.trackOrderBtn}
-                    >
-                      <Truck className={styles.smallIcon} />
-                      Track Package
-                    </button>
+                    <span>Tracking reference {order.tracking_number}</span>
                   )}
                 </div>
               </div>
@@ -390,7 +385,17 @@ const YourOrders = () => {
       {/* Enhanced Order Details Modal */}
       {showModal && selectedOrder && (
         <div className={styles.modalOverlay} onClick={closeOrderDetails}>
-          <div className={styles.modalContent} onClick={(e) => e.stopPropagation()}>
+          <div className={styles.modalContent} role="dialog" aria-modal="true" aria-label="Order details" onKeyDown={e => {
+            if (e.key === 'Escape') closeOrderDetails();
+            if (e.key === 'Tab') {
+              const buttons = Array.from(e.currentTarget.querySelectorAll('button:not(:disabled),a[href]'));
+              const boundary = e.shiftKey ? buttons[0] : buttons.at(-1);
+              if (document.activeElement === boundary) {
+                e.preventDefault();
+                (e.shiftKey ? buttons.at(-1) : buttons[0])?.focus();
+              }
+            }
+          }} onClick={(e) => e.stopPropagation()}>
             {/* Modal Header */}
             <div className={styles.modalHeader}>
               <div className={styles.modalTitle}>
@@ -407,17 +412,17 @@ const YourOrders = () => {
                   <div className={styles.modalStatus}>
                     {getStatusIcon(selectedOrder.order_status)}
                     <span className={`${styles.statusBadge} ${getStatusClass(selectedOrder.order_status)}`}>
-                      {selectedOrder.order_status?.replace('_', ' ').toUpperCase() || 'PROCESSING'}
+                      {selectedOrder.order_status?.replace('_', ' ').toUpperCase() || 'UNKNOWN'}
                     </span>
                   </div>
                   <div className={styles.modalPaymentStatus}>
                     {getPaymentStatusIcon(selectedOrder.payment_status)}
                     <span className={styles.paymentStatusBadge}>
-                      {getPaymentModeDisplay(selectedOrder.payment_status)}
+                      {getPaymentModeDisplay(selectedOrder)}
                     </span>
                   </div>
                 </div>
-                <button onClick={closeOrderDetails} className={styles.closeButton}>
+                <button autoFocus aria-label="Close order details" onClick={closeOrderDetails} className={styles.closeButton}>
                   <X className={styles.smallIcon} />
                 </button>
               </div>
@@ -439,13 +444,13 @@ const YourOrders = () => {
                         <div key={index} className={styles.orderItem}>
                           <div className={styles.itemDetails}>
                             <h5 className={styles.itemName}>
-                              {item.name || 'Product'}
+                              {item.name || 'Product'}{item.variant && ` · ${item.variant}`}
                             </h5>
                             <div className={styles.itemMeta}>
                               <span>Quantity: {item.quantity || 0}</span>
-                              <span>Unit Price: {formatCurrency(item.unit_price || 0)}</span>
+                              <span>Unit Price: {formatOrderAmount(item.unit_price)}</span>
                               <span className={styles.itemTotal}>
-                                Total: {formatCurrency(item.total_price || 0)}
+                                Total: {formatOrderAmount(item.total_price)}
                               </span>
                             </div>
                             {item.product_id && (
@@ -469,7 +474,7 @@ const YourOrders = () => {
                       <div className={styles.paymentRow}>
                         <span className={styles.paymentLabel}>Payment Method:</span>
                         <span className={styles.paymentValue}>
-                          {getPaymentModeDisplay(selectedOrder.payment_status)}
+                          {getPaymentModeDisplay(selectedOrder)}
                         </span>
                       </div>
                       
@@ -484,14 +489,14 @@ const YourOrders = () => {
                         <span className={styles.paymentLabel}>Status:</span>
                         <span className={`${styles.paymentValue} ${styles.paymentStatusValue}`}>
                           {getPaymentStatusIcon(selectedOrder.payment_status)}
-                          {selectedOrder.payment_status?.toUpperCase() || 'PENDING'}
+                          {selectedOrder.payment_status?.toUpperCase() || 'UNKNOWN'}
                         </span>
                       </div>
 
                       <div className={`${styles.paymentRow} ${styles.totalRow}`}>
                         <span className={styles.paymentLabelBold}>Total Amount:</span>
                         <span className={styles.paymentValueBold}>
-                          {formatCurrency(selectedOrder.total_amount)}
+                          {formatOrderAmount(selectedOrder.total_amount)}
                         </span>
                       </div>
                     </div>
@@ -511,7 +516,7 @@ const YourOrders = () => {
                         <span className={styles.deliveryLabel}>Status:</span>
                         <span className={styles.deliveryValue}>
                           {getStatusIcon(selectedOrder.order_status)}
-                          {selectedOrder.order_status?.replace('_', ' ').toUpperCase() || 'PROCESSING'}
+                          {selectedOrder.order_status?.replace('_', ' ').toUpperCase() || 'UNKNOWN'}
                         </span>
                       </div>
                       
@@ -608,13 +613,7 @@ const YourOrders = () => {
                       </button>
                       
                       {selectedOrder.tracking_number && (
-                        <button
-                          onClick={() => window.open(`/track/${selectedOrder.tracking_number}`, '_blank')}
-                          className={styles.trackButton}
-                        >
-                          <Truck className={styles.smallIcon} />
-                          Track Package
-                        </button>
+                        <span>Tracking reference {selectedOrder.tracking_number}</span>
                       )}
                     </div>
                   </div>

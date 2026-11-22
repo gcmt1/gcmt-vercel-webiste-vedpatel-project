@@ -54,6 +54,10 @@ const ReviewSystem = ({ productId }) => {
             className={onClick ? 'rs-star cursor-pointer' : 'rs-star'}
             onMouseEnter={() => onHover?.(i + 1)}
             onMouseLeave={() => onHover?.(0)}
+            role={onClick ? "button" : undefined}
+            tabIndex={onClick ? 0 : undefined}
+            aria-label={onClick ? `Rate ${i+1} of 5` : undefined}
+            onKeyDown={onClick ? e=>{if(e.key==="Enter" || e.key===" "){e.preventDefault();onClick(i+1);}} : undefined}
             onClick={() => onClick?.(i + 1)}
           />
         );
@@ -70,7 +74,7 @@ const ReviewSystem = ({ productId }) => {
     const { error } = await supabase.from('product_reviews').insert({
       product_id: productId,
       user_id: user.id,
-      user_name: user.user_metadata?.full_name || user.user_metadata?.name || user.email?.split('@')[0] || 'Guest',
+      user_name: user.user_metadata?.full_name || user.user_metadata?.name || 'Customer',
       rating: newRating,
       review_text: newReviewText.trim()
     });
@@ -94,32 +98,36 @@ const ReviewSystem = ({ productId }) => {
 
   const handleUpdate = async () => {
     if (!editRating || !editText.trim()) return;
-    await supabase
+    const {error} = await supabase
       .from('product_reviews')
       .update({ rating: editRating, review_text: editText.trim() })
       .eq('id', editingReview)
       .eq('user_id', user.id);
 
+    if(error) {setError("The review could not be updated."); return;}
     setEditingReview(null);
     fetchReviews();
   };
 
   const handleDelete = async (id) => {
     if (!window.confirm('Delete this review?')) return;
-    await supabase.from('product_reviews').delete().eq('id', id).eq('user_id', user.id);
+    const {error}=await supabase.from('product_reviews').delete().eq('id', id);
+    if(error){setError('The review could not be removed.');return;}
     fetchReviews();
   };
 
-  const ReviewCard = ({ review }) => (
-    <div className="rs-card">
+  const [isStaff,setIsStaff]=useState(false);
+  useEffect(()=>{let active=true; setIsStaff(false); if(user?.id) supabase.from("users").select("role").eq("id",user.id).maybeSingle().then(({data})=>{if(active)setIsStaff(data?.role==="admin");}); return ()=>{active=false;};},[user?.id]);
+  const renderReview = (review) => (
+    <div key={review.id} className="rs-card">
       <div className="rs-card-header">
         <div>
           <strong>{review.user_name}</strong>
           <p className="rs-card-date">{new Date(review.created_at).toLocaleDateString()}</p>
         </div>
-        {user?.id === review.user_id && (
+        {(user?.id === review.user_id || isStaff) && (
           <div className="rs-card-actions">
-            <button onClick={() => handleEdit(review)} className="rs-edit-btn">Edit</button>
+            {user?.id===review.user_id && <button onClick={() => handleEdit(review)} className="rs-edit-btn">Edit</button>}
             <button onClick={() => handleDelete(review.id)} className="rs-delete-btn">Delete</button>
           </div>
         )}
@@ -128,7 +136,7 @@ const ReviewSystem = ({ productId }) => {
       {editingReview === review.id ? (
         <div>
           <div className="rs-stars">{renderStars(editHover || editRating, setEditRating, setEditHover)}</div>
-          <textarea
+          <textarea aria-label="Review text" maxLength={4000}
             className="rs-textarea"
             rows={3}
             value={editText}
@@ -152,14 +160,14 @@ const ReviewSystem = ({ productId }) => {
       <div className="rs-form">
         <h3 className="rs-form-title">Write a Review</h3>
         <div className="rs-stars">{renderStars(hoverRating || newRating, setNewRating, setHoverRating)}</div>
-        <textarea
+        <textarea aria-label="Review text" maxLength={4000}
           className="rs-textarea"
           rows={4}
           placeholder="Write your review here..."
           value={newReviewText}
           onChange={(e) => setNewReviewText(e.target.value)}
         />
-        {error && <p className="rs-error">{error}</p>}
+        {error && <p role="alert" className="rs-error">{error}</p>}
         <button
           onClick={handleSubmit}
           disabled={submitting}
@@ -174,7 +182,7 @@ const ReviewSystem = ({ productId }) => {
           <p>No reviews yet.</p>
         ) : (
           <>
-            {reviews.slice(0, 3).map((r) => <ReviewCard key={r.id} review={r} />)}
+            {reviews.slice(0, 3).map(renderReview)}
 
             {reviews.length > 3 && !showAllReviews && (
               <button
@@ -193,12 +201,12 @@ const ReviewSystem = ({ productId }) => {
           <div className="rs-modal">
             <button
               onClick={() => setShowAllReviews(false)}
-              className="rs-close-btn"
+              aria-label="Close reviews" className="rs-close-btn"
             >
               <X />
             </button>
             <h3 className="rs-modal-title">All Reviews ({reviews.length})</h3>
-            {reviews.map((r) => <ReviewCard key={r.id} review={r} />)}
+            {reviews.map(renderReview)}
           </div>
         </div>
       )}

@@ -1,6 +1,8 @@
 import React, { useEffect, useState, useRef } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
-import { supabase } from '../supabaseClient';
+import { readGuestCart } from '../utils/cart';
+import { useAppContext } from '../AppContext';
+import { supabase, isGuestUser } from '../supabaseClient';
 import {
   Menu,
   X,
@@ -9,79 +11,54 @@ import {
   User
 } from 'lucide-react';
 import '../styles/Navbar.css';
-import logo from '../assets/GCMT-logo.png';
+import logo from '../assets/GCMT-logo.webp';
 
 export default function NavBar() {
   const [isScrolled, setIsScrolled] = useState(false);
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [cartCount, setCartCount] = useState(0);
   const [searchOpen, setSearchOpen] = useState(false);
-  const [user, setUser] = useState(null);
+  const { user } = useAppContext();
   const [adminRole, setAdminRole] = useState(false);
 
   const navigate = useNavigate();
-  const currentCartUser = useRef(null);
   const mobileSearchRef = useRef(null);
   const searchRef = useRef(null);
 
-  const isGuestAccount = (user) => {
-    if (!user) return true;
-    return user.email?.toLowerCase().includes('guest') || 
-           user.user_metadata?.is_guest || 
-           user.user_metadata?.account_type === 'guest' ||
-           user.is_anonymous;
-  };
-
   useEffect(() => {
-    async function init() {
-      const { data } = await supabase.auth.getSession();
-      const currentUser = data.session?.user || null;
-      setUser(currentUser);
-      currentCartUser.current = currentUser?.id || null;
-      if (currentUser) {
-        fetchCartCount(currentUser.id);
-        checkIfAdmin(currentUser.id);
+    let active = true;
+    let request = 0;
+    setAdminRole(false);
+    setCartCount(0);
+    if (user) {
+      supabase.from('users').select('role').eq('id', user.id).maybeSingle()
+        .then(({data, error}) => { if (active) setAdminRole(!error && data?.role === 'admin'); })
+        .catch(() => { if (active) setAdminRole(false); });
+    }
+    async function refreshCart() {
+      const current = ++request;
+      try {
+        let rows = readGuestCart();
+        if (user) {
+          const {data, error} = await supabase.from('cart_items').select('quantity').eq('user_id', user.id);
+          if (error) throw error;
+          rows = data || [];
+        }
+        if (active && current === request) setCartCount(rows.reduce((sum, row) => sum + row.quantity, 0));
+      } catch {
+        if (active && current === request) setCartCount(0);
       }
     }
-
-    init();
-
-    const { data: listener } = supabase.auth.onAuthStateChange((_e, session) => {
-      const currentUser = session?.user || null;
-      setUser(currentUser);
-      currentCartUser.current = currentUser?.id || null;
-      if (currentUser) {
-        fetchCartCount(currentUser.id);
-        checkIfAdmin(currentUser.id);
-      } else {
-        setCartCount(0);
-        setAdminRole(false);
-      }
-    });
-
-    const refreshCart = () => { if (currentCartUser.current) fetchCartCount(currentCartUser.current); };
+    function onStorage(event) { if (!user && (!event.key || event.key === 'guest_cart')) refreshCart(); }
+    refreshCart();
     window.addEventListener('cart-changed', refreshCart);
-    return () => { listener.subscription.unsubscribe(); window.removeEventListener('cart-changed', refreshCart); };
-  }, []);
-
-  const checkIfAdmin = async (userId) => {
-    const { data, error } = await supabase
-      .from('users')
-      .select('role')
-      .eq('id', userId)
-      .maybeSingle();
-
-    if (error) {
-      console.error('❌ Error checking admin role:', error);
-      return;
-    }
-
-    if (data?.role === 'admin') {
-      setAdminRole(true);
-    } else {
-      setAdminRole(false);
-    }
-  };
+    window.addEventListener('storage', onStorage);
+    return () => {
+      active = false;
+      window.removeEventListener('cart-changed', refreshCart);
+      window.removeEventListener('storage', onStorage);
+    };
+  }, [user?.id]);
 
   useEffect(() => {
     const onScroll = () => setIsScrolled(window.scrollY > 50);
@@ -110,24 +87,11 @@ export default function NavBar() {
     return () => { document.body.style.overflow = ''; };
   }, [mobileMenuOpen]);
 
-  async function fetchCartCount(userId) {
-    try {
-      const { data, error } = await supabase
-        .from('cart_items')
-        .select('quantity')
-        .eq('user_id', userId);
-      if (error) throw error;
-      setCartCount(data.reduce((sum, row) => sum + row.quantity, 0));
-    } catch {
-      setCartCount(0);
-    }
-  }
-
   function handleSearch(e) {
     e.preventDefault();
     const q = e.target.querySelector('input').value.trim();
     if (q) {
-      navigate('/products');
+      navigate('/products?q=' + encodeURIComponent(q) + '#products');
       setSearchOpen(false);
     }
   }
@@ -166,7 +130,7 @@ export default function NavBar() {
     }
   }, [mobileMenuOpen]);
 
-  const isGuest = isGuestAccount(user);
+  const isGuest = !user || isGuestUser(user);
 
   return (
     <header

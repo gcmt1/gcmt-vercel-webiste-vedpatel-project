@@ -45,6 +45,7 @@ describe("untrusted text and export boundaries", () => {
     });
     await generateInvoicePDF({
       id: "order1",
+      total_amount: 100,
       user_name: '<img src=x onerror="window.__audit=true">',
       user_email: "<script>test</script>",
       address_line: "A & B",
@@ -97,4 +98,52 @@ describe("untrusted text and export boundaries", () => {
     ]);
     expect(readGuestCart()).toEqual([{ productId: "p2", quantity: 2 }]);
   });
+});
+
+it.each([
+  { total_amount: 12, unit_price: 10, total_price: 10 },
+  { total_amount: 12, unit_price: 10, total_price: 12 },
+  { total_amount: 12, unit_price: "12x", total_price: 12 },
+])("holds an invoice when stored amounts are inconsistent", async (row) => {
+  await expect(
+    generateInvoicePDF({
+      id: "fixture",
+      total_amount: row.total_amount,
+      product_list: [{ name: "Fixture", quantity: 1, ...row }],
+    }),
+  ).rejects.toThrow(/totals need review/);
+  expect(save).not.toHaveBeenCalled();
+});
+it("requires matching image type and header for product uploads", async () => {
+  const { imageExtension } = await import("../../src/utils/images");
+  const image = (type) => ({
+    type,
+    slice: () => ({
+      arrayBuffer: async () =>
+        Uint8Array.from([0x89, 0x50, 0x4e, 0x47, 13, 10, 26, 10]).buffer,
+    }),
+  });
+  expect(await imageExtension(image("image/png"))).toBe("png");
+  await expect(imageExtension(image("image/jpeg"))).rejects.toThrow();
+});
+
+it("uses recorded collections for the staff total and tolerates older item snapshots", async () => {
+  const { orderItems, paidOrderTotal } =
+    await import("../../src/utils/orders.js");
+  expect(orderItems('[{"name":"Original item"}]')).toEqual([
+    { name: "Original item" },
+  ]);
+  for (const broken of [null, "invalid", "[null]", "{}"])
+    expect(orderItems(broken)).toEqual([]);
+  expect(
+    paidOrderTotal([
+      { payment_status: "FAILED", total_amount: 90 },
+      { payment_status: "COD_PENDING", total_amount: 90 },
+      { payment_status: "paid", total_amount: "12.91" },
+      { payment_status: "SUCCESS", total_amount: 1.09 },
+    ]),
+  ).toBe(14);
+  expect(
+    paidOrderTotal([{ payment_status: "COMPLETED", total_amount: null }]),
+  ).toBeNull();
 });

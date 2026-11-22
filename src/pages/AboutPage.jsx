@@ -1,6 +1,6 @@
 import React from 'react';
 import { Mail, Phone, MapPin, Award, Users, Shield } from 'lucide-react';
-import Photo from "../assets/GCMT-logo.png";
+import Photo from "../assets/GCMT-logo.webp";
 import arya from "../assets/ARYA PATEL GCMT.jpg";
 import { Helmet } from 'react-helmet-async';
 import "../styles/AboutPage.css";

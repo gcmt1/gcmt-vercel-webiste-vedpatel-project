@@ -1,9 +1,9 @@
 import { useState } from "react";
 import { supabase } from "../supabaseClient";
-import { readGuestCart, writeGuestCart, validQuantity } from "../utils/cart";
+import { readGuestCart, writeGuestCart, validQuantity, withGuestCart, cartKey, addStoredItem } from "../utils/cart";
 export function useCart() {
   const [loading, setLoading] = useState(false);
-  const addToCart = async (productId, quantity = 1) => {
+  const addToCart = async (productId, quantity = 1, variant = "") => {
     if (!validQuantity(quantity) || productId == null) return false;
     setLoading(true);
     try {
@@ -13,35 +13,18 @@ export function useCart() {
       } = await supabase.auth.getSession();
       if (error) throw error;
       if (session?.user) {
-        const uid = session.user.id;
-        const { data: existing, error: readError } = await supabase
-          .from("cart_items")
-          .select("id,quantity")
-          .eq("user_id", uid)
-          .eq("product_id", productId)
-          .maybeSingle();
-        if (readError) throw readError;
-        const next = (existing?.quantity || 0) + quantity;
-        if (!validQuantity(next)) return false;
-        const result = existing
-          ? await supabase
-              .from("cart_items")
-              .update({ quantity: next })
-              .eq("id", existing.id)
-              .eq("user_id", uid)
-          : await supabase
-              .from("cart_items")
-              .insert({ user_id: uid, product_id: productId, quantity });
-        if (result.error) throw result.error;
+        await addStoredItem(supabase,{productId,quantity,variant,operationId:crypto.randomUUID()});
         window.dispatchEvent(new Event("cart-changed"));
       } else {
+        await withGuestCart(() => {
         const cart = readGuestCart();
-        const existing = cart.find((item) => item.productId === productId);
+        const existing = cart.find((item) => cartKey(item) === cartKey({productId,variant}));
         const next = (existing?.quantity || 0) + quantity;
-        if (!validQuantity(next)) return false;
+        if (!validQuantity(next)) throw new Error("Quantity limit exceeded");
         if (existing) existing.quantity = next;
-        else cart.push({ productId, quantity });
+        else cart.push({ productId, quantity, variant });
         writeGuestCart(cart);
+        });
       }
       return true;
     } catch {

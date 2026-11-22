@@ -44,37 +44,3 @@ export function shippingDetails(input) {
     throw new HttpError(400, "Invalid contact details.");
   return result;
 }
-export function pricedItems(rows) {
-  if (!Array.isArray(rows) || rows.length === 0 || rows.length > 100)
-    throw new HttpError(400, "The cart is empty or too large.");
-  let totalPaise = 0;
-  const items = rows.map((row) => {
-    const product = row.products;
-    if (
-      !product ||
-      product.in_stock === false ||
-      !Number.isInteger(row.quantity) ||
-      row.quantity < 1 ||
-      row.quantity > 100
-    )
-      throw new HttpError(400, "A cart item is unavailable or invalid.");
-    const base = toPaise(product.product_price);
-    const discount = Number(product.product_discount || 0);
-    if (!Number.isFinite(discount) || discount < 0 || discount >= 100)
-      throw new HttpError(400, "A product price needs review.");
-    const unitPaise = Math.round((base * (100 - discount)) / 100);
-    if (unitPaise < 1)
-      throw new HttpError(400, "A product price needs review.");
-    totalPaise += unitPaise * row.quantity;
-    return {
-      product_id: row.product_id,
-      name: String(product.product_name).slice(0, 200),
-      quantity: row.quantity,
-      unit_price: unitPaise / 100,
-      total_price: (unitPaise * row.quantity) / 100,
-    };
-  });
-  if (!Number.isSafeInteger(totalPaise) || totalPaise > 100000000)
-    throw new HttpError(400, "Order total exceeds the supported limit.");
-  return { items, totalPaise };
-}

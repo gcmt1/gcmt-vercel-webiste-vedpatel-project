@@ -1,8 +1,7 @@
 import { createClient } from "@supabase/supabase-js";
-import { publicSupabaseUrl, publicSupabaseKey } from "./config/public";
-const supabaseUrl = import.meta.env.REACT_APP_SUPABASE_URL || publicSupabaseUrl;
-const supabaseKey =
-  import.meta.env.REACT_APP_SUPABASE_ANON_KEY || publicSupabaseKey;
+const supabaseUrl = import.meta.env.REACT_APP_SUPABASE_URL;
+const supabaseKey = import.meta.env.REACT_APP_SUPABASE_ANON_KEY;
+if (!supabaseUrl || !supabaseKey) throw new Error("Configure the Supabase URL and publishable key.");
 // A browser may use an anon/publishable key, never a privileged backend key.
 if (supabaseKey.startsWith("sb_secret_"))
   throw new Error("Invalid browser service configuration.");

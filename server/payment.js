@@ -1,3 +1,4 @@
+import { isClientProduction } from "./environment.js";
 import {
   HttpError,
   guarded,
@@ -7,7 +8,8 @@ import {
 } from "./http.js";
 import { getDatabase } from "./services.js";
 import { decryptResponse } from "./ccavenue.js";
-import { PAYMENT_ID, toPaise } from "./validation.js";
+import { internalReference } from "./reference.js";
+import { toPaise } from "./validation.js";
 export function createPaymentHandler({
   env = process.env,
   database = () => getDatabase(env),
@@ -15,7 +17,11 @@ export function createPaymentHandler({
   return guarded(async (request) => {
     requireMethod(request, "POST");
     if (
-      env.SECURE_CHECKOUT_ENABLED !== "true" ||
+      env.CCA_CALLBACKS_ENABLED !== "true" ||
+      !(
+        env.CCA_ENVIRONMENT === "sandbox" ||
+        (env.CCA_ENVIRONMENT === "production" && isClientProduction(env))
+      ) ||
       !env.CCA_WORKING_KEY ||
       !env.CCA_MERCHANT_ID
     )
@@ -31,10 +37,11 @@ export function createPaymentHandler({
     if (form.getAll("encResp").length !== 1)
       throw new HttpError(400, "Invalid payment response.");
     const payment = decryptResponse(form.get("encResp"), env.CCA_WORKING_KEY);
+    const id = internalReference(payment.order_id || "");
     if (
-      !PAYMENT_ID.test(payment.order_id || "") ||
+      !id ||
       payment.currency !== "INR" ||
-      (payment.merchant_id && payment.merchant_id !== env.CCA_MERCHANT_ID)
+      payment.merchant_id !== env.CCA_MERCHANT_ID
     )
       throw new HttpError(400, "Payment details do not match.");
     const states = {
@@ -43,7 +50,9 @@ export function createPaymentHandler({
       Aborted: "FAILED",
       Invalid: "FAILED",
     };
-    const status = states[payment.order_status];
+    const status = Object.hasOwn(states, payment.order_status)
+      ? states[payment.order_status]
+      : null;
     if (
       !status ||
       (status === "SUCCESS" &&
@@ -53,8 +62,9 @@ export function createPaymentHandler({
     const amountPaise = toPaise(payment.amount);
     const db = database();
     // The database function locks the order and commits payment + receipt atomically.
-    const { data, error } = await db.rpc("record_gateway_payment", {
-      p_payment_id: payment.order_id,
+    const { data, error } = await db.rpc("record_store_response", {
+      p_payment_id: id,
+      p_reference: payment.order_id,
       p_amount_paise: amountPaise,
       p_currency: payment.currency,
       p_status: status,
@@ -68,7 +78,7 @@ export function createPaymentHandler({
         ? "/payment-success"
         : "/payment-cancel";
     const redirect = new URL(path, origin);
-    redirect.searchParams.set("payment_id", payment.order_id);
+    redirect.searchParams.set("payment_id", id);
     return new Response(null, {
       status: 303,
       headers: {

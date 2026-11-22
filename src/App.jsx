@@ -20,14 +20,14 @@ import Checkout from "./pages/CheckOut";
 import Tnc from "./pages/TnC";
 import Footer from "./components/Footer";
 import ScrollToTop from "./components/ScrollToTop";
-import AdminOrder from "./pages/AdminOrder";
+const AdminOrder = React.lazy(() => import("./pages/AdminOrder"));
 import PaymentSuccess from "./pages/PaymentSuccess";
 import PaymentCancel from "./pages/PaymentCancel";
-import AdminLanding from "./pages/AdminPage";
-import AdminSubscription from "./pages/AdminSubscription";
-import AdminContactForm from "./pages/AdminContactForm";
+const AdminLanding = React.lazy(() => import("./pages/AdminPage"));
+const AdminSubscription = React.lazy(() => import("./pages/AdminSubscription"));
+const AdminContactForm = React.lazy(() => import("./pages/AdminContactForm"));
 import YourOrders from "./pages/YourOrders"; // ✅ Fix: Capital Y
-import AdminProductManager  from "./pages/AdminProductManager"; // ✅ Fix: Import AdminProductManager
+const AdminProductManager = React.lazy(() => import("./pages/AdminProductManager"));
 import "./App.css";
 
 function App() {
@@ -43,6 +43,7 @@ function App() {
               </header>
 
               <main className="app-main">
+                <React.Suspense fallback={<p role="status">Loading page…</p>}>
                 <Routes>
                   <Route path="/" element={<HomePage />} />
                   <Route path="/products" element={<ProductListingPage />} />
@@ -66,13 +67,13 @@ function App() {
                   <Route path="/your-orders" element={<YourOrders />} /> {/* ✅ Fix case */}
                   <Route path="/admin-product-manager" element={<RequireAdmin><AdminProductManager /></RequireAdmin>} /> {/* ✅ Fix: Use correct component name */}
                   {/* Catch-all route for undefined paths */}
-                  <Route path="*" element={<HomePage />} />
-                </Routes>
+                  <Route path="*" element={<section><h1>Page not found</h1><a href="/products">Browse GCMT products</a></section>} />
+                </Routes></React.Suspense>
               </main>
 
               <footer className="app-footer">
                 <Footer />
-                <p>© 2025 Chase WorldWide. All rights reserved.</p>
+                <p>© {new Date().getFullYear()} Chase WorldWide. All rights reserved.</p>
               </footer>
             </div>
           </Router>

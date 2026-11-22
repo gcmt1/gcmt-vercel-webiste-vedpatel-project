@@ -16,7 +16,7 @@ function AuthPage() {
   const navigate = useNavigate();
   const [params] = useSearchParams();
   const handleSignUp = async () => {
-    if (!name.trim() || name.length > 200 || password.length < 8) {
+    if (!name.trim() || name.length > 200 || (!session?.user?.is_anonymous && password.length < 8)) {
       showToast(
         "Enter your name and a password of at least 8 characters.",
         "error",
@@ -28,9 +28,8 @@ function AuthPage() {
       const result = session?.user?.is_anonymous
         ? await supabase.auth.updateUser({
             email: email.trim(),
-            password,
             data: { name: name.trim() },
-          })
+          },{ emailRedirectTo:window.location.origin+"/auth?setPassword=1" })
         : await supabase.auth.signUp({
             email: email.trim(),
             password,
@@ -61,14 +60,14 @@ function AuthPage() {
       if (session?.user?.is_anonymous) {
         const { data, error } = await supabase
           .from("cart_items")
-          .select("product_id,quantity")
+          .select("product_id,variant,quantity")
           .eq("user_id", session.user.id);
         if (error) throw error;
         const cart = readGuestCart();
         for (const row of data || []) {
-          const item = cart.find((item) => item.productId === row.product_id);
+          const item = cart.find((item) => item.productId === row.product_id && (item.variant || "") === (row.variant || ""));
           if (item) item.quantity = Math.min(100, item.quantity + row.quantity);
-          else cart.push({ productId: row.product_id, quantity: row.quantity });
+          else cart.push({ productId: row.product_id, quantity: row.quantity, ...(row.variant && {variant:row.variant}) });
         }
         anonymousCart = cart;
       }
@@ -100,6 +99,31 @@ function AuthPage() {
       setLoading(false);
     }
   };
+  async function requestReset() {
+    if (!email.trim()) { showToast("Enter your email address.","error"); return; }
+    setLoading(true);
+    try {
+      const {error} = await supabase.auth.resetPasswordForEmail(email.trim(),{redirectTo:window.location.origin+"/auth?setPassword=1"});
+      if(error) throw error;
+      showToast("Check your email for a password reset link.","success");
+    } catch { showToast("Password reset could not be requested.","error"); }
+    finally { setLoading(false); }
+  }
+  async function setConfirmedPassword() {
+    if(password.length<8) { showToast("Use at least eight characters.","error"); return; }
+    setLoading(true);
+    try {
+      const {error}=await supabase.auth.updateUser({password});
+      if(error) throw error;
+      setPassword(""); navigate("/profile"); showToast("Password updated.","success");
+    } catch { showToast("Reopen a valid confirmation or recovery email.","error"); }
+    finally {setLoading(false);}
+  }
+  if(params.get("setPassword")==="1") return <div className="auth-page"><h1>Set your password</h1>
+    {session?.user?.email_confirmed_at ? <><label htmlFor="new-password">New password</label>
+    <input id="new-password" type="password" autoComplete="new-password" value={password} onChange={e=>setPassword(e.target.value)}/>
+    <button disabled={loading} onClick={setConfirmedPassword}>Save password</button></> :
+    <p>Open the confirmation or recovery link sent to your email address.</p>}</div>;
   return (
     <div className="auth-page">
       <h1>Login / Sign Up</h1>
@@ -115,21 +139,21 @@ function AuthPage() {
 
       <input
         type="email"
-        placeholder="Email"
+        aria-label="Email" autoComplete="email" placeholder="Email"
         value={email}
         onChange={(e) => setEmail(e.target.value)}
         disabled={loading}
       />
       <input
         type="password"
-        placeholder="Password"
+        aria-label="Password" autoComplete="current-password" placeholder="Password"
         value={password}
         onChange={(e) => setPassword(e.target.value)}
         disabled={loading}
       />
       <input
         type="text"
-        placeholder="Name (for sign-up only)"
+        aria-label="Name (for sign-up only)" placeholder="Name (for sign-up only)"
         value={name}
         onChange={(e) => setName(e.target.value)}
         disabled={loading}
@@ -140,6 +164,7 @@ function AuthPage() {
       <button onClick={handleLogin} disabled={loading}>
         {loading ? "Processing..." : "Log In"}
       </button>
+      <button disabled={loading} onClick={requestReset}>Forgot password?</button>
     </div>
   );
 }

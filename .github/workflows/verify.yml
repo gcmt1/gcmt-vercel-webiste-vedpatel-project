@@ -2,7 +2,7 @@ name: Verify application
 on:
   pull_request:
   push:
-    branches: [master, 'security/**']
+    branches: [master, main, 'security/**']
 permissions:
   contents: read
 concurrency:
@@ -20,8 +20,10 @@ jobs:
         with:
           node-version: '24'
           cache: npm
+      - run: npm install --global npm@11.9.0
       - run: npm ci
       - run: npm run format:check
       - run: npm run check
       - run: npx playwright install --with-deps chromium
       - run: npm run test:e2e
+      - run: node scripts/check-secrets.mjs --build

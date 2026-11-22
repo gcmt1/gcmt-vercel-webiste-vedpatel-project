@@ -15,7 +15,7 @@ export function createOrderLookup({
   return guarded(async (request) => {
     requireMethod(request, "GET");
     const paymentId = new URL(request.url).searchParams.get("payment_id");
-    if (!PAYMENT_ID.test(paymentId || ""))
+    if (!PAYMENT_ID.test((paymentId || "").replace(/^COD-/, "")))
       throw new HttpError(400, "An explicit payment reference is required.");
     const db = database();
     const user = await authenticate(request, db);
@@ -45,17 +45,18 @@ export function createCodUpdate({
     const body = await readJson(request);
     if (
       !body ||
-      !["SUCCESS", "COD_PENDING"].includes(body.status) ||
+      body.status !== "SUCCESS" ||
+      typeof body.note !== "string" ||
+      body.note.trim().length < 3 ||
+      body.note.length > 160 ||
       !/^[A-Za-z0-9-]{1,64}$/.test(String(body.orderId || ""))
     )
       throw new HttpError(400, "Invalid update.");
-    const { data, error } = await db
-      .from("orders")
-      .update({ payment_status: body.status })
-      .eq("id", body.orderId)
-      .like("payment_id", "COD-%")
-      .select("id")
-      .maybeSingle();
+    const { data, error } = await db.rpc("collect_store_cod", {
+      p_order: String(body.orderId),
+      p_actor: user.id,
+      p_note: body.note.trim(),
+    });
     if (error) throw new Error("Order update failed");
     if (!data) throw new HttpError(404, "Cash-on-delivery order not found.");
     return json({ success: true });

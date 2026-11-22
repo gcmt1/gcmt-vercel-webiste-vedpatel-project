@@ -2,13 +2,11 @@
 <urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">
   <url>
     <loc>https://gcmtshop.com/</loc>
-    <lastmod>2025-08-02</lastmod>
     <priority>1.0</priority>
   </url>
-  <!-- Example product page -->
+
   <url>
-    <loc>https://gcmtshop.com/product/herbal-charcoal-toothpaste</loc>
-    <lastmod>2025-08-02</lastmod>
+    <loc>https://gcmtshop.com/products</loc>
     <priority>0.8</priority>
   </url>
 </urlset>

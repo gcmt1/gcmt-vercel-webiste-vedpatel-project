@@ -3,12 +3,12 @@ import { useCart } from '../hooks/useCart';
 import { useToast } from '../components/ToastContext';
 import "../styles/Cart.css";
 
-export default function AddToCartButton({ productId, quantity = 1 }) {
+export default function AddToCartButton({ productId, quantity = 1, variant = "", disabled = false }) {
   const { addToCart, loading } = useCart();
   const { showToast } = useToast(); // ✅ Import toast
 
   const handleClick = async () => {
-    const success = await addToCart(productId, quantity);
+    const success = await addToCart(productId, quantity, variant);
     if (success) {
       showToast('✅ Product added to cart!', 'success');
     } else {
@@ -19,7 +19,7 @@ export default function AddToCartButton({ productId, quantity = 1 }) {
   return (
     <button
       onClick={handleClick}
-      disabled={loading}
+      disabled={loading || disabled}
       className="add-to-cart-btn"
     >
       {loading ? 'Adding...' : 'Add to Cart'}

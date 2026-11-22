@@ -41,33 +41,30 @@ export function priceFor(product) {
     return 0;
   return Math.round((Math.round(price * 100) * (100 - discount)) / 100) / 100;
 }
+export const cartKey = (item) => JSON.stringify([String(item.productId),item.variant || ""]);
+export function withGuestCart(action) {
+  return navigator.locks ? navigator.locks.request("gcmt-guest-cart",action) : action();
+}
+export async function addStoredItem(client,item) {
+  const {error} = await client.rpc("add_store_cart_item", {
+    p_product:String(item.productId), p_variant:item.variant || "", p_quantity:item.quantity,
+    p_operation:item.operationId
+  });
+  if (error) throw new Error("Could not update the cart. Review the size and quantity.");
+}
 export async function mergeGuestCart(userId, client) {
-  const cart = readGuestCart();
-  for (const item of cart) {
-    const { data, error } = await client
-      .from("cart_items")
-      .select("id,quantity")
-      .eq("user_id", userId)
-      .eq("product_id", item.productId)
-      .maybeSingle();
-    if (error) throw new Error("Could not restore the cart.");
-    const quantity = Math.min(100, (data?.quantity || 0) + item.quantity);
-    const query = data
-      ? client
-          .from("cart_items")
-          .update({ quantity })
-          .eq("id", data.id)
-          .eq("user_id", userId)
-      : client
-          .from("cart_items")
-          .insert({ user_id: userId, product_id: item.productId, quantity });
-    const result = await query;
-    if (result.error) throw new Error("Could not restore the cart.");
-    // Remove only successfully merged items so a failed merge does not duplicate quantities on retry.
-    writeGuestCart(
-      readGuestCart().filter((row) => row.productId !== item.productId),
-    );
-  }
+  if (!userId) throw new Error("Sign in to restore the cart.");
+  await withGuestCart(async () => {
+    const items = readGuestCart();
+    if (!items.length) return;
+    for (const item of items) item.operationId ||= crypto.randomUUID();
+    writeGuestCart(items);
+    while (items.length) {
+      await addStoredItem(client,items[0]);
+      items.shift();
+      writeGuestCart(items);
+    }
+  });
 }
 
 export async function loadCart(userId, client) {
@@ -75,7 +72,7 @@ export async function loadCart(userId, client) {
     const { data, error } = await client
       .from("cart_items")
       .select(
-        "id,product_id,quantity,products:products(id,product_name,product_price,product_discount,product_image)",
+        "id,product_id,variant,quantity,products:products(id,product_name,product_price,product_discount,product_image)",
       )
       .eq("user_id", userId);
     if (error) throw new Error("Unable to load the cart.");
@@ -84,6 +81,7 @@ export async function loadCart(userId, client) {
       .map((row) => ({
         id: row.id,
         productId: row.product_id,
+        variant:row.variant || "",
         name: row.products.product_name,
         price: priceFor(row.products),
         image: String(row.products.product_image || "").split(",")[0],
@@ -108,6 +106,7 @@ export async function loadCart(userId, client) {
       ? [
           {
             productId: product.id,
+            variant:item.variant || "",
             name: product.product_name,
             price: priceFor(product),
             image: String(product.product_image || "").split(",")[0],

@@ -1,3 +1,6 @@
+import { isClientProduction } from "./environment.js";
+import { gatewayUrls } from "../shared/gateway.js";
+import { gatewayReference } from "./reference.js";
 import {
   HttpError,
   guarded,
@@ -9,7 +12,7 @@ import {
 } from "./http.js";
 import { getDatabase, authenticate } from "./services.js";
 import { encryptRequest } from "./ccavenue.js";
-import { PAYMENT_ID, pricedItems, shippingDetails } from "./validation.js";
+import { PAYMENT_ID, shippingDetails } from "./validation.js";
 export function createCheckoutHandler({
   env = process.env,
   database = () => getDatabase(env),
@@ -17,24 +20,42 @@ export function createCheckoutHandler({
   return guarded(async (request) => {
     requireMethod(request, "POST");
     checkOrigin(request, env);
-    if (
-      env.SECURE_CHECKOUT_ENABLED !== "true" ||
-      !env.CCA_MERCHANT_ID ||
-      !env.CCA_ACCESS_CODE ||
-      !env.CCA_WORKING_KEY
-    )
-      throw new HttpError(503, "Checkout is temporarily unavailable.");
-    const db = database();
-    const user = await authenticate(request, db);
-    const body = await readJson(request);
+    const body = await readJson(request, 65536);
     if (!body || typeof body !== "object" || Array.isArray(body))
       throw new HttpError(400, "Invalid checkout request.");
-    if (!PAYMENT_ID.test(body.attemptId || ""))
+    const cod = body.method === "cod";
+    if (body.method !== undefined && !cod)
+      throw new HttpError(400, "Invalid payment method.");
+    if (cod && env.STORE_COD_ENABLED !== "true")
+      throw new HttpError(503, "Cash on delivery is unavailable.");
+    if (
+      !cod &&
+      (env.SECURE_CHECKOUT_ENABLED !== "true" ||
+        !Object.hasOwn(gatewayUrls, env.CCA_ENVIRONMENT) ||
+        (env.CCA_ENVIRONMENT === "production" && !isClientProduction(env)) ||
+        !env.CCA_MERCHANT_ID ||
+        !env.CCA_ACCESS_CODE ||
+        !env.CCA_WORKING_KEY ||
+        env.CCA_CALLBACKS_ENABLED !== "true")
+    )
+      throw new HttpError(503, "Checkout is temporarily unavailable.");
+    if (typeof body.attemptId !== "string" || !PAYMENT_ID.test(body.attemptId))
       throw new HttpError(400, "Invalid checkout attempt.");
     if (
-      Object.keys(body).some((key) => !["attemptId", "shipping"].includes(key))
+      Object.keys(body).some(
+        (key) =>
+          ![
+            "attemptId",
+            "shipping",
+            "expectedPaise",
+            "expectedLines",
+            "method",
+          ].includes(key),
+      )
     )
       throw new HttpError(400, "Unexpected checkout fields.");
+    const db = database();
+    const user = await authenticate(request, db);
     const shipping = shippingDetails(body.shipping);
     const { data: permitted, error: limitError } = await db.rpc(
       "consume_checkout_limit",
@@ -46,28 +67,38 @@ export function createCheckoutHandler({
         429,
         "Too many checkout attempts. Please try again later.",
       );
-    const { data: previous, error: previousError } = await db
-      .from("orders")
-      .select("id")
-      .eq("payment_id", body.attemptId)
-      .maybeSingle();
-    if (previousError) throw new Error("Order lookup failed");
-    // Never re-encrypt an existing attempt: concurrent requests must not create payable duplicates.
-    if (previous)
+    const origin = siteUrl(env);
+    if (
+      !Number.isSafeInteger(body.expectedPaise) ||
+      body.expectedPaise < 1 ||
+      !Array.isArray(body.expectedLines) ||
+      !body.expectedLines.length ||
+      body.expectedLines.length > 100
+    )
+      throw new HttpError(400, "Review the cart before checkout.");
+    const { data: order, error } = await db.rpc("open_store_checkout", {
+      p_owner: user.id,
+      p_attempt: (cod ? "COD-" : "") + body.attemptId.toLowerCase(),
+      p_shipping: shipping,
+      p_expected: body.expectedPaise,
+      p_lines: body.expectedLines,
+      p_reference: cod ? null : gatewayReference(body.attemptId),
+    });
+    if (error?.code === "23505")
+      throw new HttpError(409, "This checkout attempt was already submitted.");
+    if (error || !order) throw new Error("Order creation failed");
+    if (order.existing)
+      return json({ existing: true, paymentId: order.payment_id });
+    if (order.changed || order.invalid)
       throw new HttpError(
         409,
-        "This checkout attempt was already submitted. Please check your orders.",
+        "Your cart changed or an item is unavailable. Review the cart before paying.",
       );
-    const { data: cart, error: cartError } = await db
-      .from("cart_items")
-      .select("product_id, quantity, products:products(*)")
-      .eq("user_id", user.id);
-    if (cartError) throw new Error("Cart lookup failed");
-    const { items, totalPaise } = pricedItems(cart);
-    const origin = siteUrl(env);
+    if (order.cod) return json({ cod: true, paymentId: order.payment_id });
+    const totalPaise = order.total_paise;
     const fields = {
       merchant_id: env.CCA_MERCHANT_ID,
-      order_id: body.attemptId,
+      order_id: order.gateway_reference,
       amount: (totalPaise / 100).toFixed(2),
       currency: "INR",
       redirect_url: `${origin}/api/payment-response`,
@@ -83,37 +114,21 @@ export function createCheckoutHandler({
       billing_email: shipping.email,
     };
     const encRequest = encryptRequest(fields, env.CCA_WORKING_KEY);
-    const { data: order, error } = await db
-      .from("orders")
-      .insert({
-        user_id: user.id,
-        user_name: shipping.name,
-        user_email: shipping.email,
-        user_phone: shipping.phone,
-        address_line: shipping.street,
-        city: shipping.city,
-        state: shipping.state,
-        postal_code: shipping.pincode,
-        product_list: items,
-        total_amount: totalPaise / 100,
-        payment_status: "PENDING",
-        order_status: "PENDING",
-        payment_id: body.attemptId,
-        created_at: new Date().toISOString(),
-      })
-      .select("id")
-      .single();
-    if (error?.code === "23505")
-      throw new HttpError(409, "This checkout attempt was already submitted.");
-    if (error || !order) throw new Error("Order creation failed");
+    const release = await db.rpc("release_store_handoff", {
+      p_owner: user.id,
+      p_payment_id: order.payment_id,
+      p_generation: order.generation,
+    });
+    if (release.error) throw new Error("Could not release payment handoff");
+    if (release.data !== true)
+      return json({ existing: true, paymentId: order.payment_id });
     return json({
       orderId: order.id,
-      paymentId: body.attemptId,
+      paymentId: order.payment_id,
       encRequest,
       accessCode: env.CCA_ACCESS_CODE,
       totalPaise,
-      gatewayUrl:
-        "https://secure.ccavenue.com/transaction/transaction.do?command=initiateTransaction",
+      gatewayUrl: gatewayUrls[env.CCA_ENVIRONMENT],
     });
   });
 }

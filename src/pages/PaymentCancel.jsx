@@ -1,4 +1,5 @@
 import React from 'react';
+import { CircleAlert } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import '../styles/PaymentCancel.css'; // Optional: Add styles
 
@@ -8,17 +9,13 @@ export default function PaymentCancel() {
   return (
     <div className="payment-cancel-container">
       <div className="cancel-card">
-        <img
-          src="/assets/payment-failed.svg" // ✅ Replace with your own illustration or use an icon
-          alt="Payment Failed"
-          className="cancel-icon"
-        />
-        <h1>Payment Cancelled</h1>
-        <p>Your transaction was cancelled before it could be completed.</p>
-        <p>If this was a mistake or a network issue, you can retry the payment.</p>
+        <CircleAlert className="cancel-icon" aria-hidden="true" />
+        <h1>Check your payment status</h1>
+        <p>Open your order history to see the last recorded payment status.</p>
+        <p>If your account was debited, contact the store before paying again.</p>
         <div className="cancel-actions">
-          <button onClick={() => navigate('/checkout')} className="btn btn-primary">
-            Retry Payment
+          <button onClick={() => navigate('/your-orders')} className="btn btn-primary">
+            View orders
           </button>
           <button onClick={() => navigate('/')} className="btn btn-outline">
             Return to Homepage

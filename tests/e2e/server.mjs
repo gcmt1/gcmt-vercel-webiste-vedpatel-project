@@ -31,7 +31,10 @@ const users = {
   },
 };
 const env = {
+  STORE_COD_ENABLED: "true",
+  CCA_ENVIRONMENT: "sandbox",
   SECURE_CHECKOUT_ENABLED: "true",
+  CCA_CALLBACKS_ENABLED: "true",
   SITE_URL: origin,
   CCA_MERCHANT_ID: "merchant-test",
   CCA_ACCESS_CODE: "access-test",
@@ -96,14 +99,12 @@ async function reset(mode = "") {
   db = new PGlite();
   await db.waitReady;
   await db.exec(readFileSync("tests/fixtures/schema.sql", "utf8"));
-  const migration = readdirSync("supabase/migrations").find((x) =>
-    x.endsWith("_production_security.sql"),
-  );
-  await db.exec(readFileSync("supabase/migrations/" + migration, "utf8"));
-  await db.exec(`ALTER TABLE public.products ADD COLUMN product_sub_description text DEFAULT 'Product description', ADD COLUMN product_description text DEFAULT 'Product details', ADD COLUMN product_image text DEFAULT '/logo192.png',ADD COLUMN created_at timestamptz DEFAULT now();
- ALTER TABLE public.orders ADD COLUMN user_name text,ADD COLUMN user_email text,ADD COLUMN user_phone text,ADD COLUMN address_line text,ADD COLUMN city text,ADD COLUMN state text,ADD COLUMN postal_code text,ADD COLUMN created_at timestamptz DEFAULT now(),ADD COLUMN guest_identifier text;
- ALTER TABLE public.contact_messages ADD COLUMN created_at timestamptz DEFAULT now();
- ALTER TABLE public.newsletter_subscriptions ADD COLUMN created_at timestamptz DEFAULT now();`);
+  await db.exec(readFileSync("supabase/bootstrap/empty-project.sql", "utf8"));
+  for (const migration of readdirSync("supabase/migrations")
+    .filter((name) => name.endsWith(".sql"))
+    .sort()) {
+    await db.exec(readFileSync("supabase/migrations/" + migration, "utf8"));
+  }
   for (const user of Object.values(users))
     await db.query(
       "INSERT INTO auth.users(id,email,is_anonymous) VALUES($1,$2,$3)",
@@ -113,7 +114,7 @@ async function reset(mode = "") {
     users.admin.id,
   ]);
   await db.query(
-    "INSERT INTO public.products(id,product_name,product_price,product_discount) VALUES($1,'Test toothpaste',100,10)",
+    "INSERT INTO public.products(id,product_name,product_price,product_discount,product_description,product_sub_description,product_image) VALUES($1,'Test toothpaste',100,10,'Product details','Product description','/logo192.png')",
     [product],
   );
   await db.query(
@@ -124,7 +125,22 @@ async function reset(mode = "") {
     "INSERT INTO public.contact_messages(name,email,phone,message) VALUES($1,$2,$3,$4)",
     ['A "quoted", customer', "a@example.test", "9999999999", "=1+1"],
   );
-  env.SECURE_CHECKOUT_ENABLED = mode === "disabled" ? "false" : "true";
+  if (mode === "legacy-cod") {
+    await db.query(
+      "UPDATE public.orders SET payment_id=$1, order_status='cancelled', payment_status='cod_pending', total_amount=NULL WHERE payment_id=$2",
+      ["COD-" + bobPayment, bobPayment],
+    );
+  }
+  if (mode === "variants")
+    await db.exec("UPDATE public.products SET size='Small, Large'");
+  env.STORE_COD_ENABLED =
+    mode === "cod" && process.env.GCMT_FIXTURE_REVIEW !== "true"
+      ? "true"
+      : "false";
+  env.SECURE_CHECKOUT_ENABLED =
+    process.env.GCMT_FIXTURE_REVIEW === "true" || mode === "disabled"
+      ? "false"
+      : "true";
 }
 async function queryAs(role, user, sql, params = []) {
   return db.transaction(async (tx) => {
@@ -156,7 +172,11 @@ function database() {
           "service_role",
           null,
           `SELECT public.${name}(${keys.map((_, i) => "$" + (i + 1)).join(",")}) AS data`,
-          keys.map((k) => args[k]),
+          keys.map((k) =>
+            typeof args[k] === "object" && args[k] !== null
+              ? JSON.stringify(args[k])
+              : args[k],
+          ),
         );
         return { data: rows[0].data, error: null };
       } catch (error) {
@@ -276,6 +296,8 @@ async function rest(request, url) {
     if (value.startsWith("eq.")) {
       params.push(value.slice(3));
       clauses.push(`${key}=$${params.length}`);
+    } else if (value === "is.null") {
+      clauses.push(`${key} IS NULL`);
     } else if (value.startsWith("in.(")) {
       const values = value
         .slice(4, -1)
@@ -318,19 +340,21 @@ async function rest(request, url) {
     } else if (request.method === "PATCH") {
       const input = await request.json();
       const keys = Object.keys(input);
+      if (!keys.every((k) => names.test(k))) return output({}, 400);
       let values = Object.values(input);
       const offset = values.length;
       const shifted = where.replace(
         /\$(\d+)/g,
         (_, number) => "$" + (Number(number) + offset),
       );
-      await queryAs(
-        role,
-        user,
-        `UPDATE public.${table} SET ${keys.map((k, i) => k + "=$" + (i + 1)).join(",")}${shifted}`,
-        [...values, ...params],
-      );
-      rows = [];
+      rows = (
+        await queryAs(
+          role,
+          user,
+          `UPDATE public.${table} SET ${keys.map((k, i) => k + "=$" + (i + 1)).join(",")}${shifted} RETURNING id`,
+          [...values, ...params],
+        )
+      ).rows;
     } else if (request.method === "DELETE") {
       await queryAs(role, user, `DELETE FROM public.${table}${where}`, params);
       rows = [];
@@ -385,6 +409,25 @@ async function handle(request) {
       : output({ message: "Not signed in" }, 401);
   }
   if (url.pathname === "/supabase/auth/v1/logout") return output({});
+  if (
+    url.pathname === "/supabase/rest/v1/rpc/add_store_cart_item" &&
+    request.method === "POST"
+  ) {
+    const user = userFor(request.headers);
+    if (!user) return output({}, 401);
+    const args = await request.json();
+    try {
+      await queryAs(
+        "authenticated",
+        user,
+        "select public.add_store_cart_item($1,$2,$3,$4)",
+        [args.p_product, args.p_variant, args.p_quantity, args.p_operation],
+      );
+      return output(null);
+    } catch {
+      return output({ message: "Invalid cart change" }, 400);
+    }
+  }
   if (url.pathname.startsWith("/supabase/rest/v1/")) return rest(request, url);
   const path = resolve("build", "." + url.pathname);
   const buildRoot = resolve("build");
@@ -405,6 +448,11 @@ async function handle(request) {
   };
   const headers = JSON.parse(readFileSync("vercel.json", "utf8")).routes[0]
     .headers;
+  // The loopback fixture submits only to the intercepted merchant sandbox.
+  // Hosted sandbox headers require their own deployment approval and test.
+  headers["Content-Security-Policy"] = headers[
+    "Content-Security-Policy"
+  ].replace("https://secure.ccavenue.com", "https://test.ccavenue.com");
   return new Response(readFileSync(file), {
     headers: {
       ...headers,
