@@ -1,49 +1,85 @@
-# Engineering questions
+# GCMT Shop engineering questions
 
-1. **Why send the displayed price when the server prices the cart?** The display is the customer's quote. `server/checkout.js` passes it to `open_store_checkout`, which calculates from locked product records and compares each line and the total. Product changes require another review. The cart does not reserve inventory.
+## 1. How do the frontend, backend and database communicate?
 
-2. **Who identifies the customer?** `authenticate` in `server/services.js` calls Supabase Auth with the bearer token. The derived user ID scopes the order. An expired session requires signing in again, including for order lookup.
+React uses the Supabase client for auth, catalog reads and permitted operations such as editing a cart or viewing order history. Checkout and the order confirmation screen call same-origin Node.js endpoints. Those endpoints can verify a session and invoke restricted PostgreSQL functions, while gateway credentials stay on the server. The UI handles a failed request as a service or validation error. Payment and fulfilment status come from the stored order.
 
-3. **How does an order reach CCAvenue?** `server/checkout.js` encrypts the stored reference, verified amount and shipping fields, claims a generation, then returns a form destination from `shared/gateway.js`. `CheckOut.jsx` submits it only after an explicit customer action. The merchant must confirm fields, URLs and lengths in its sandbox.
+[Browser client](../src/supabaseClient.jsx) · [HTTP entry points](../api/)
 
-4. **Why use two database steps for handoff?** `open_store_checkout` persists a prepared quote. `release_store_handoff` consumes a single generation just before response delivery. A crash during preparation is recoverable without issuing two forms. The network cannot establish whether the final HTTP response reached the customer.
+## 2. How does authentication work, and what happens when a guest signs in?
 
-5. **Can two tabs create two payable orders?** The owner profile lock serializes checkout even across distinct UUIDs. An issued unresolved attempt returns its existing reference. Native tests in `tests/postgres/checkout.mjs` race distinct connections. Separate customer identities remain independent.
+Before sign-in, a guest basket keeps product IDs, variants and quantities in browser storage. Guest checkout can create an anonymous Supabase identity so the order still has an owner. Converting that identity through account setup can preserve its user ID. Signing in to a different existing account can carry over basket items, while earlier orders remain attached to the identity that placed them. Cart additions use operation IDs so retrying a merge does not count the same addition twice.
 
-6. **What makes a callback acceptable?** `createPaymentHandler` validates the encrypted form, merchant, currency, status and tracking fields. `record_store_response` checks the exact reference and delegates the monetary comparison to `record_gateway_payment`. The provider's approved response samples are outstanding.
+[Account setup and sign-in](../src/pages/AuthPage.jsx) · [Guest cart merge](../src/utils/cart.js)
 
-7. **How are repeated successes handled?** `record_gateway_payment` locks the order and compares its receipt. The receipt has unique payment and tracking references. A duplicate cannot repeat cart consumption. A database rollback permits a subsequent genuine callback to succeed.
+## 3. How are products, carts and orders represented in PostgreSQL?
 
-8. **What happens when evidence conflicts?** The integrity migration records dispositions in `private.gateway_events`. An accepted success is protected against downgrade. A compatible delayed success may upgrade a failure. Merchant investigation is required for contradictory references or evidence after closure.
+Products carry their current price, discount, availability and size options. A cart row belongs to one user and identifies a product, a variant and a quantity. The owner, product and variant form a unique key, so two sizes can coexist in the same cart. Each order stores a line-item snapshot alongside its payment and fulfilment statuses. A later catalog edit leaves the recorded order intact. Gateway receipts and response history have separate tables in the private schema.
 
-9. **What happens if the customer closes the browser?** `PaymentSuccess.jsx` and `server/orders.js` read the stored owner-scoped result on return. A retained prepared generation can be requoted. A released form remains potentially payable until reconciled. The browser never certifies settlement.
+[Schema bootstrap](../supabase/bootstrap/empty-project.sql) · [Checkout migration](../supabase/migrations/20261122174027_checkout_integrity.sql)
 
-10. **When may support unlock a fresh attempt?** `close_unpaid_store_attempt` requires a merchant case and is restricted to the database operator. The evidence must establish final non-payability. A customer timeout, local timer or failed page navigation is insufficient.
+## 4. What happens if the price or variant changes during checkout?
 
-11. **Where does a guest cart live?** `src/utils/cart.js` stores product IDs, quantities and sizes locally before identity creation. On merge, stable operation UUIDs and the cart RPC protect retried additions. Losing browser storage before merge loses that local basket.
+The checkout request carries the line items and total the customer saw. PostgreSQL locks the relevant rows, checks that each product and selected size are available, recalculates prices from the catalog, and compares the lines and total. A substitution that leaves the total unchanged can still invalidate the quote. If the basket has changed, the customer must review it again before the server prepares a payable form.
 
-12. **Does account conversion preserve orders?** `AuthPage.jsx` updates the anonymous identity before email confirmation and password setup. This can retain the same user ID. Logging into a different existing account can transfer basket lines, but ownership policies continue to bind historic orders to their original identity. Confirm the actual email flow in staging.
+[Checkout handler](../server/checkout.js) · [Quote comparison in the migration](../supabase/migrations/20261122174027_checkout_integrity.sql)
 
-13. **Why keep admin routes and database policies?** `RequireAdmin.jsx` gates the interface. The October migration grants only permitted commands and uses `private.is_store_admin` for direct API access. The hosting route itself cannot establish database authorization.
+## 5. Why does the server verify the final price?
 
-14. **What is the service-role boundary?** `server/services.js` constructs the privileged client server-side. `vite.config.js` exposes named public fields only. This role can bypass RLS, so owner predicates, admin checks and control of every deployed writer remain essential.
+Browser prices present the quote to the customer. The database computes the amount it will store for the order in integer paise and returns it to the server for the encrypted gateway request. This ties the outgoing payment amount to the purchase snapshot. On return, the database compares the reported amount with the same stored total. A mismatch prevents the payment from being accepted for that order.
 
-15. **Which changes must commit together?** Order creation and its snapshot, the COD basket removal, and the online receipt/payment/cart/event updates each require a transaction. See both migration files and the injected-journal-failure test in `tests/postgres/checkout.mjs`. Browser navigation is outside that transaction.
+[Checkout handler](../server/checkout.js) · [Payment handler](../server/payment.js)
 
-16. **How does settlement affect later cart edits?** The online snapshot identifies the purchased cart row and variant. A matching row is removed or reduced once. A replaced row, smaller current quantity or legacy item with unknown row identity is preserved. The customer can review residual items.
+## 6. How does GCMT Shop integrate with CCAvenue?
 
-17. **How is COD collection represented?** `collect_store_cod` checks the actor's database role, locks the COD order and records a collection note. A gateway callback cannot collect cash. Owner approval is still needed for which new orders qualify for COD.
+The server prepares an encrypted request from the stored order reference, verified amount and shipping details. It then claims the prepared handoff so only one form is released. The browser submits that form to CCAvenue. On return, the payment endpoint decrypts and validates the response before asking PostgreSQL to reconcile it with the order. If the expected merchant fields are missing or invalid, the response is rejected. The merchant sandbox still needs to confirm the field and callback contract.
 
-18. **How are catalog images controlled?** `AdminProductManager.jsx` and `src/utils/images.js` check size, allowed media type and file headers. The October migration restricts bucket writes by role and configures bucket limits. A real Storage upload and CDN read are staging checks.
+[Checkout handler](../server/checkout.js) · [Payment lifecycle](payment-lifecycle.md)
 
-19. **Why sanitize CSV and invoice data separately?** `src/utils/security.js` quotes and neutralizes spreadsheet formula cells. `InvoiceGenerator.jsx` escapes text before HTML rendering, validates stored money and uses the PDF renderer. Export tests cover both formats. Financial and tax approval remains separate.
+## 7. How does the success page know whether an order was paid?
 
-20. **What distinguishes unit, database and browser evidence?** Handler tests inject database results. PGlite executes policies against fixture roles. `tests/postgres/checkout.mjs` uses independent native database connections. Playwright exercises the built SPA and local handlers. None authenticates to the actual merchant or hosted Supabase instance.
+The confirmation screen requests the stored order through the lookup endpoint. The endpoint validates the session and selects the order by reference and authenticated owner. The screen uses the recorded payment status to decide whether to present the purchase as paid. A customer who reaches the page before a valid response has been committed sees the recorded pending state, and a reference from another account cannot retrieve that account's purchase.
 
-21. **How is staging isolated?** `scripts/check-environment.mjs` and `server/environment.js` check project targets, server-only settings and production repository/branch context. The operator must verify independent staging resources, callbacks and identity redirects. A repository guard cannot enumerate every production project alias.
+[Confirmation screen](../src/pages/PaymentSuccess.jsx) · [Owner-scoped lookup](../server/orders.js)
 
-22. **What if a migration fails?** Each migration has its own transaction. A later failure can leave an earlier migration committed. Keep checkout paused, record the exact migration state and compare the restored staging schema and current receipts. The coordinated recovery procedure is in `docs/deployment.md`.
+## 8. What happens if the gateway sends the same response twice?
 
-23. **What signals matter during reconciliation?** `private.payment_review_queue`, receipt uniqueness, order age, event dispositions and inquiry exhaustion distinguish missing from conflicting evidence. `server/reconciliation.js` needs an approved merchant transport and an operator before it can recover actual transactions.
+Settlement locks the order and checks its existing receipt before updating payment or cart data. If the response repeats already accepted evidence, PostgreSQL records the duplicate without consuming the purchased cart items a second time. Unique payment and tracking references also help prevent two orders from settling against one capture. Conflicting evidence can enter review so the stored financial result stays protected while staff investigate.
 
-24. **Why does the release remain blocked?** The public bundle and selected source have different payment architectures. `docs/engineering-audit.md` records the branch evidence, historical credential exposure and outstanding merchant, database and business checks. The next integration decision requires the owner to identify the active writer and deployed schema.
+[Receipt constraints](../supabase/migrations/20261030203438_production_security.sql) · [Settlement and events](../supabase/migrations/20261122174027_checkout_integrity.sql)
+
+## 9. What happens if the customer closes the browser during checkout?
+
+The customer can return under the same identity and check the stored status. If a form was prepared but never released, a new explicit checkout action can revalidate the basket and replace the prepared quote. After release, a lost response and a delivered form are indistinguishable to the server, so checkout returns the existing reference while that attempt remains unresolved. A new payable attempt requires authoritative evidence that the previous one can no longer be paid.
+
+[Checkout recovery](payment-lifecycle.md#recovery-decisions) · [Browser regression tests](../tests/e2e/store.spec.js)
+
+## 10. How do transactions prevent incomplete payment updates?
+
+A successful online reconciliation records the receipt, updates the order, reconciles the purchased cart rows and appends the event in the same PostgreSQL transaction. The stored snapshot identifies which cart row and variant were purchased, so later edits can survive settlement. If a write fails partway through, the changes roll back together. The native PostgreSQL suite injects a failure after settlement starts and verifies a subsequent retry can still complete.
+
+[Settlement transaction](../supabase/migrations/20261122174027_checkout_integrity.sql) · [Native PostgreSQL tests](../tests/postgres/checkout.mjs)
+
+## 11. How are customer records protected and staff permissions enforced?
+
+Supabase grants limit what each database role can do, and row-level policies restrict which records it can access. Customers can read their own order rows. The staff interface checks the user's stored role, while database policies independently protect staff operations. The server's privileged client can bypass those policies, so the API validates the bearer token and applies owner or staff checks as appropriate. A customer who changes a route or reference still faces those checks.
+
+[Access policies](../supabase/migrations/20261030203438_production_security.sql) · [Server authentication and staff checks](../server/services.js)
+
+## 12. How does cash on delivery differ from online payment?
+
+When COD is enabled, checkout applies the same pricing and ownership checks, then commits a cash-due order with the purchased basket change in one transaction. It returns an order reference. An authorised staff member can later record collection on an eligible COD order using a receipt reference. The database records the staff actor and keeps cash collection separate from gateway receipts. An unpaid or cancelled order is displayed according to its recorded status.
+
+[COD endpoints](../server/orders.js) · [COD lifecycle](payment-lifecycle.md#cash-on-delivery-and-invoices)
+
+## 13. How are PDF invoices checked against stored totals?
+
+The browser builds the PDF from the stored order snapshot and escapes order text before rendering it. The generator converts amounts to paise and verifies that each unit price multiplied by its quantity equals the recorded line total. It checks that the sum matches the stored order amount before rendering. Missing or inconsistent totals stop generation so an older record with incomplete data can be reviewed before an invoice is issued.
+
+[Invoice generator](../src/components/InvoiceGenerator.jsx) · [Rendering tests](../tests/security/rendering.test.jsx)
+
+## 14. What did local testing verify, and what remains open?
+
+Vitest covers components, handlers and database policies. Native PostgreSQL tests use independent connections to check concurrent writes and exercise rollback. Playwright drives the built app against local identities, an isolated database and simulated gateway responses, so the tests can check ownership, retries and order recovery with synthetic data. A real merchant account and the hosted Supabase database require separate staging checks before the commercial payment flow can use this implementation.
+
+[Verification commands](../README.md#testing) · [Staging checks](deployment.md#rehearse-in-staging)

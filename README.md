@@ -1,236 +1,200 @@
-<div align="center">
+# GCMT Shop — Full-Stack Ecommerce and Order Management
 
-<img src="public/GCMT-logo.png" alt="GCMT Herbal logo" width="160" />
+GCMT Shop is a React storefront and staff workspace for GCMT Herbal. Customers can browse products, choose sizes, manage a cart and follow their orders. Staff manage the catalog, product images, order fulfilment, enquiries and newsletter subscriptions.
 
-# GCMT Shop
+The central engineering problem is keeping the cart a customer reviewed, their authenticated identity, the amount charged by the gateway and the stored order in agreement. The checkout API and PostgreSQL enforce that relationship from quote through settlement, including when a browser disconnects or a gateway response arrives twice.
 
-### Herbal commerce, from product discovery to order management.
+## What the application does
 
-A React storefront and administration workspace for **GCMT Herbal / Gold Coin Multi-Trade Private Limited**.
-
-![React](https://img.shields.io/badge/React-Frontend-149ECA?style=flat-square&logo=react&logoColor=white)
-![JavaScript](https://img.shields.io/badge/JavaScript-ES6%2B-F7DF1E?style=flat-square&logo=javascript&logoColor=black)
-![Supabase](https://img.shields.io/badge/Supabase-Backend%20Services-3ECF8E?style=flat-square&logo=supabase&logoColor=white)
-![CSS](https://img.shields.io/badge/CSS-Responsive%20Design-663399?style=flat-square&logo=css&logoColor=white)
-
-[Features](#features) · [Technology](#technology) · [Getting Started](#getting-started) · [Deployment](#deployment)
-
-</div>
-
----
-
-## Overview
-
-GCMT Shop combines a customer shopping experience with dedicated tools for store administration. Customers can explore herbal and dental-care products, read product information, manage their cart, initiate online checkout, and view order records. Store administrators can maintain catalog content, manage orders, review customer enquiries, and export subscriber records.
-
-The application uses **React, JavaScript, React Router, and custom CSS**, with Supabase for authentication, data access, and product-image storage. This source implements CCAvenue checkout through same-origin server endpoints. The public storefront bundle observed on November 23, 2026 contains a separate legacy integration. The candidate is isolated and release is blocked pending the gates in the [engineering audit](docs/engineering-audit.md).
-
-## Features
-
-### Customer experience
-
-| Area | Capabilities |
+| Area | Capabilities in this source |
 | --- | --- |
-| Product discovery | Homepage product highlights and a database-backed product catalog. |
-| Product information | Image galleries, pricing and discount displays, size selection, descriptions, benefits, ingredients, and usage instructions. |
-| Shopping cart | Add products, adjust quantities, remove items, and review totals. |
-| Quick checkout | “Buy Now” opens size selection for products with variants. For a product without variants it adds one item and opens checkout. |
-| Customer accounts | Email/password registration and login, profile information, and session persistence. |
-| Online checkout | Shipping/contact details, form validation, order creation, and CCAvenue payment initiation. |
-| Order history | Customer order records, payment and fulfilment status displays, order detail dialogs, and downloadable PDF invoices. |
-| Product reviews | Star ratings and written reviews, with controls for customers to manage their own reviews. |
-| Contact and newsletter | Customer enquiry submissions and newsletter signup through the shared footer. |
-| Content pages | Company information, FAQs, policies, and a static blog listing with category and text filters. |
-| Responsive interface | Mobile navigation, adaptable layouts, loading states, toast notifications, and animations. |
-| Page metadata | Metadata on selected pages, FAQ structured data, sitemap, and robots file. |
+| Product discovery | Search and filter the catalog, open product details and select an available size where a product offers one. |
+| Carts | Keep a guest basket in the browser, then merge its items into the cart associated with a Supabase identity. |
+| Checkout | Reprice the cart on the server and prepare a CCAvenue payment or a cash-on-delivery (COD) order when that method is enabled. |
+| Order history | View recorded payment and fulfilment status and download a PDF invoice for eligible records. |
+| Staff operations | Maintain products and images, update and archive orders, and record cash collection for eligible COD orders. |
+| Reviews and communications | Submit and manage product reviews, send enquiries and join the newsletter. Staff can review enquiries and subscriptions and export them as CSV. |
 
-### Store administration
+## Run locally
 
-| Workspace | Capabilities |
-| --- | --- |
-| Product management | Create, edit, search, and delete products; maintain descriptions, prices, discounts, sizes, ingredients, and usage information. |
-| Product images | Upload multiple product images using file selection or drag and drop. |
-| Order management | Search and filter orders, inspect order details, update fulfilment statuses, and manage selected records. |
-| Payment records | View payment statuses and manage payment records for existing cash-on-delivery orders. |
-| Newsletter subscribers | Search and filter subscribers, view summary statistics, manage records, and export results to CSV. |
-| Contact enquiries | Search submissions, view message details, manage records, and export results to CSV. |
+Use Node.js 24.15 or later in the 24.x line and npm 11.9.0, the version pinned for CI. From the repository root, run:
 
-Customer checkout supports online payment and a separately gated cash-on-delivery path. Both default off. Its availability in a deployed environment depends on the server configuration, database migration, and payment-provider validation described in [deployment preparation](docs/deployment.md). Cash collection requires a staff identity and receipt reference. Staff archive orders while preserving their payment history.
+```bash
+npm ci
+npm run review
+```
 
-## Technology
+Open <http://127.0.0.1:4173>. The preview builds the React app and serves it with synthetic accounts, products and orders backed by an isolated, in-memory PostgreSQL database (PGlite). Both checkout methods are disabled in this mode. Setup requires no Supabase project, merchant account or credentials.
 
-| Layer | Tools |
-| --- | --- |
-| User interface | React, React DOM, JavaScript/JSX |
-| Routing | React Router DOM |
-| State | React hooks and Context |
-| Authentication and data | Supabase Auth and Supabase JavaScript client |
-| Product images | Supabase Storage |
-| Payments | CCAvenue and same-origin server endpoints |
-| PDF invoices | html2canvas and jsPDF |
-| Styling | Custom CSS and CSS Modules |
-| Icons | Lucide React |
-| Page metadata | react-helmet-async |
-| Build tooling | Vite |
-| Test tooling | Vitest, React Testing Library, Playwright, and isolated PostgreSQL tests |
-| Server runtime | Node.js Fetch handlers on Vercel |
+Press **Ctrl+C** to stop the preview. Run `npm run review` again after source changes to rebuild the app and reset the sample data. For connected development, see [deployment and staging](docs/deployment.md#rehearse-in-staging).
 
-Dependency declarations and resolved versions are maintained in `package.json` and `package-lock.json`.
+## Follow a customer order
+
+```mermaid
+flowchart TD
+    Product["Choose a product and size"] --> Cart["Review cart and shipping details"]
+    Cart --> Identity["Sign in or continue with an anonymous identity"]
+    Identity --> Quote["API validates identity, PostgreSQL reprices the cart"]
+    Quote -->|Cart or quote changed| Cart
+    Quote -->|Quote matches| Order["Persist the order snapshot with payment pending"]
+    Order --> Form["Release one encrypted form for the attempt"]
+    Form --> Gateway["Browser submits form to CCAvenue"]
+    Gateway --> Callback["Payment API validates the return"]
+    Callback --> Record["PostgreSQL reconciles the response with the stored order"]
+    Record --> History["Customer reads recorded status in order history"]
+    Order -->|Return missing or interrupted| History
+```
+
+An online order exists before the browser leaves for CCAvenue. Its snapshot preserves the agreed line items, total and reference for reconciliation. While that order is pending, the customer can read its stored status without creating a second payment attempt.
+
+- If a price, size or availability changes, checkout asks the customer to review the cart again, even if its total is the same.
+- If the browser loses the response after the form has been released, checkout returns the existing unresolved reference and withholds a second form. The same identity can check order history while the gateway result is reconciled.
+- If the gateway repeats an accepted response, the database recognizes the stored receipt and leaves the purchased cart quantities alone.
+- If any part of settlement fails to persist, PostgreSQL rolls back the receipt, payment state and related cart changes together. A later valid response can retry reconciliation.
+
+[Checkout handler](server/checkout.js) · [Callback handler](server/payment.js) · [Payment lifecycle and recovery](docs/payment-lifecycle.md)
 
 ## Architecture
 
 ```mermaid
-flowchart TD
-    App["React storefront and admin"] --> Auth["Authentication"]
-    App --> Data["Product and order data"]
-    App --> Images["Product image storage"]
-    App --> Payments["Payment service"]
-    Payments --> Gateway["CCAvenue"]
-    Gateway -->|Payment response| Payments
+flowchart LR
+    Browser["React storefront and staff workspace"]
+    Auth["Supabase Auth"]
+    Storage["Supabase Storage"]
+    Policies["Supabase Data API and row-level security"]
+    DB[("Supabase PostgreSQL")]
+    API["Node.js APIs"]
+    Gateway["CCAvenue"]
+    Fixture["Loopback test fixtures"]
+    Browser -->|Sign in and get a session| Auth
+    Browser -->|Read images and upload as staff| Storage
+    Browser -->|Catalog, carts, orders and reviews| Policies
+    Policies -->|Apply policies to row access| DB
+    Browser -->|Checkout quote, token and order lookup| API
+    API -->|Validate bearer token on customer and staff routes| Auth
+    API -->|Run privileged checkout and settlement functions| DB
+    API -->|Return encrypted payment form| Browser
+    Browser -->|Submit hosted payment form| Gateway
+    Gateway -->|Return payment response| API
+    Fixture -.->|Emulate Auth, Data API and gateway| Browser
+    Fixture -.->|Inject local identities and database| API
 ```
 
-The application contains customer pages, shared interface components, and dedicated administration screens. Supabase provides the connected authentication, database, and storage services. The application includes same-origin server endpoints for checkout, order lookup, and payment responses. Merchant credentials and database access policies are provisioned separately.
+React handles browsing, cart interaction and presentation. For direct browser queries, grants and row-level security (RLS) constrain what the current Supabase identity can access. The Node.js API validates that identity for private routes and derives the owner from the session. Its service client can bypass RLS, so explicit owner and staff checks matter on that path. Merchant credentials and privileged database settings stay on the server.
 
-## Getting Started
-
-### Prerequisites
-
-- **Node.js 24.15.0 or newer within the 24.x release line** (required by the locked test dependencies).
-- **npm 11.9.0** and **Git**.
-- An approved development Supabase environment with the application's data model, access policies, and image storage.
-- An approved CCAvenue test configuration when developing checkout functionality.
-
-### 1. Clone and install
-
-```bash
-git clone https://github.com/gcmt1/gcmt-vercel-webiste-vedpatel-project.git
-cd gcmt-vercel-webiste-vedpatel-project
-npm ci
-```
-
-The clone command retrieves the remote default branch. For this local handoff, use the reviewed `fix/gcmt-checkout-integrity` checkout or apply its verified patch to the baseline identified in the engineering audit.
-
-The repository's `.npmrc` supplies the dependency-resolution settings used by this project.
-
-### 2. Prepare development services
-
-Copy `.env.example` to `.env.local` and configure an approved development Supabase project and its public key. Use development accounts and test records for local work. Configure server-only variables only when testing checkout.
-
-```bash
-cp .env.example .env.local
-```
-
-For local API requests from `http://localhost:3000`, set `SITE_URL=http://localhost:3000` in `.env.local`. The origin must match the address used in your browser; `localhost` and `127.0.0.1` are different origins. Use the canonical HTTPS origin for a deployed environment. Gateway callback testing requires a merchant-approved, externally reachable test environment; local tests do not establish payment-provider compatibility.
-
-For an empty development database, review the opt-in bootstrap in `supabase/bootstrap/empty-project.sql` and both ordered migrations. Existing databases require the separate schema comparison in the deployment guide. Hosted Auth, Storage and merchant integration require a separate setup. Obtain those instructions through the maintainer's approved private channel.
-
-A local frontend server can still connect to remote services. Confirm that the application points to the intended development environment before using forms, accounts, or checkout.
-
-### 3. Start the application
-
-```bash
-npm start
-```
-
-Open [http://localhost:3000](http://localhost:3000). The development server reloads source changes and serves the local API routes. Server endpoints remain unavailable until development credentials and the database migration are configured.
-
-## Local fixture storefront
-
-With the locked dependencies installed, run `npm run review` and open `http://127.0.0.1:4173`. The local fixture supplies accounts and catalog rows. Leave that port free when running Playwright. Exercising checkout against real services requires separately provisioned staging credentials.
-
-## Environment
-
-| Variable | Purpose |
+| Technology | Role |
 | --- | --- |
-| `REACT_APP_SUPABASE_URL`, `REACT_APP_SUPABASE_ANON_KEY` | Public Supabase URL and publishable/anon key for the intended environment. |
-| `REACT_APP_GA_MEASUREMENT_ID` | Optional public analytics measurement ID. |
-| `REACT_APP_COD_ENABLED` | Build-time visibility of customer COD checkout. |
-| `SUPABASE_URL`, `SUPABASE_SERVICE_ROLE_KEY` | Server database project and privileged key. Use the same project as the browser. |
-| `SITE_URL` | Canonical origin used for same-origin checks and both gateway return URLs. |
-| `CCA_MERCHANT_ID`, `CCA_WORKING_KEY`, `CCA_ACCESS_CODE` | Merchant identity, encryption secret and gateway handoff access code. The server supplies the access code only in the checkout response. |
-| `CCA_ENVIRONMENT` | Select the sandbox or production gateway from the shared allowlist. |
-| `SECURE_CHECKOUT_ENABLED`, `CCA_CALLBACKS_ENABLED` | Independent server gates for new online attempts and processing existing returns. |
-| `STORE_COD_ENABLED` | Server permission for new COD orders. Requires separately approved storefront visibility. |
-| `STORE_PRODUCTION_BRANCH` | Owner-verified production branch. Production guard also checks hosting-provided `VERCEL_ENV`, `VERCEL_GIT_REPO_OWNER`, `VERCEL_GIT_REPO_SLUG` and `VERCEL_GIT_COMMIT_REF`. |
+| React, React Router and Vite | Render the storefront and staff screens, handle navigation and build the frontend. |
+| Supabase Auth, PostgreSQL and Storage | Issue identities, enforce data access and persist business records and product images. |
+| Node.js and CCAvenue | Prepare encrypted gateway requests, validate callbacks and return stored order status. |
+| Vitest, Playwright, PGlite and native PostgreSQL | Test handlers, browser flows, SQL policies and concurrent transactions with local fixtures. |
 
-## Troubleshooting
+The database calculates prices in paise from the current catalog and compares the entire quote before releasing a form. Persisting that quote ties the eventual payment to the original purchase even when catalog prices change. Settlement groups the receipt, order state and cart reconciliation in one transaction so they cannot disagree after a partial failure. Order lookup uses the recorded owner even when a customer has the payment reference.
 
-- **Store configuration required.** Configure the two public Supabase settings and restart or rebuild. The fixture storefront requires no real service credentials.
-- **Cart changed.** Review current prices, sizes, quantities and availability. The database compares the complete quote before saving a payable snapshot.
-- **Payment not confirmed.** Open order history in the same account. Support can compare the reference with the merchant and check the private review queue. A new charge requires authoritative clearance of the old attempt.
-- **Invoice unavailable.** Inspect the stored total and historic line shape privately. A mismatch requires finance review.
-- **Receipt tests cannot start.** The native test cluster needs a writable temporary directory and a free loopback port. Playwright also needs Chromium and port 4173.
+## Data model and payment logic
 
-The [payment lifecycle](docs/payment-lifecycle.md) describes pricing, handoff recovery and final settlement. The [engineering questions](docs/engineering-questions.md), [test evidence and findings](docs/engineering-audit.md), [file inventory](docs/review-scope.md) and [deployment gates](docs/deployment.md) document the review and its limitations.
+Supabase Auth identities map to entries in `public.users`. Products carry prices, discounts and available sizes. Cart rows track owner, product, selected variant and quantity. Orders keep a line-item snapshot so history can display the agreed quantities and prices. Product reviews, contact enquiries and newsletter subscriptions have their own tables. Gateway receipts, response events and staff cash collection actions are stored in the private schema.
 
-## Project Structure
+`open_store_checkout` locks the customer's checkout and compares the quote with the current basket. `record_store_response` binds the callback to the stored gateway reference and passes the payment evidence to the settlement function. Unique references, row locks and atomic writes protect retries and concurrent requests. COD uses the same pricing checks and records an unpaid order. `collect_store_cod` records the staff actor and receipt when cash is collected.
 
-| Path | Purpose |
-| --- | --- |
-| `index.html`, `public/` | HTML entry point, public branding, manifest, sitemap, and robots file. |
-| `src/App.jsx` | Application providers, shared layout, and routing. |
-| `src/components/` | Navigation, footer, product cards, reviews, cart controls, notifications, and invoice generation. |
-| `src/hooks/` | Reusable application hooks. |
-| `src/pages/` | Storefront, customer, checkout, payment, and administration screens. |
-| `src/styles/` | Page-specific styling and CSS Modules. |
-| `src/assets/` | Logos, product images, promotional artwork, and marketing video. |
-| `supabase/` | Database migrations and local service configuration. |
-| `server/`, `api/` | Server-only checkout, payment response, and order endpoints. |
-| `tests/` | Regression tests and isolated service fixtures. |
-| `vercel.json` | Frontend hosting configuration. |
+[Schema bootstrap](supabase/bootstrap/empty-project.sql) · [Checkout migration](supabase/migrations/20261122174027_checkout_integrity.sql) · [Access policies](supabase/migrations/20261030203438_production_security.sql)
 
-## Available Commands
+## Testing
 
-| Command | Purpose |
-| --- | --- |
-| `npm start` | Start the local development server. |
-| `npm run build` | Generate the production frontend in `build/`. |
-| `npm run review` | Serve the storefront with synthetic local records and checkout disabled. |
-| `npm run test:postgres` | Start a temporary loopback PostgreSQL cluster and test concurrent writes and rollback. |
-| `npm test` | Run unit, handler, and database-policy regression tests. |
-| `npm run test:watch` | Start the test watcher. |
-| `npm run test:e2e` | Test the browser flow against isolated local services. |
-| `npm run check` | Run the secret scan, tests, build, and runtime dependency audit. |
-| `npm run format:check` | Check formatting of server, tooling, and test files. |
-| `npm run check:secrets` | Scan tracked and non-ignored untracked source for private environment files and recognized key patterns. |
-| `npm run release:check` | Validate supplied deployment environment variables and project/origin consistency. |
+The local results below were verified on November 23, 2026 with Node.js 24.22.2 and npm 11.19.1.
 
-Install the browser before running the end-to-end suite:
+Install Chromium with `npx playwright install chromium` before running the browser suite. On Linux CI, the workflow uses `npx playwright install --with-deps chromium` to install the system dependencies as well. Stop the preview first so port 4173 is free.
 
-```bash
-npx playwright install chromium
-npm run test:e2e
+| Command | What it verifies | Local result |
+| --- | --- | --- |
+| `npm test` | Handler behavior, SQL policies via PGlite, access control and component behavior | 49 passed |
+| `npm run test:postgres` | Native PostgreSQL races, callback retries and transaction rollback | 15 passed |
+| `npm run test:e2e` | Storefront flows, account isolation, checkout recovery and simulated gateway responses | 15 passed |
+| `npm run build` | Vite production bundle | Passed |
+
+`npm run check` combines the source secret scan, Vitest, native PostgreSQL tests, build and runtime dependency audit. The browser tests use an isolated identity service, synthetic records and a payment simulator. [Verification workflow](.github/workflows/verify.yml) · [Test evidence](docs/engineering-audit.md)
+
+## Common Engineering Questions
+
+### 1. How do the frontend, backend and database communicate?
+
+React uses Supabase for sign-in, catalog reads and permitted actions such as editing a cart. For checkout and payment status, React calls the Node.js API on the same site. The API verifies the caller and invokes restricted PostgreSQL functions. The storefront uses the order status saved by the backend, so a failed request can be retried without guessing whether payment succeeded.
+
+### 2. Can customers shop without creating an account?
+
+Yes. Visitors can browse and keep a cart in their browser without registering. When a guest starts checkout, Supabase can create an anonymous identity that owns the order. That identity can be upgraded during account setup. A guest who signs into a different account can carry over the cart, while any earlier orders stay with the identity that placed them.
+
+### 3. How are products, shopping carts and orders stored?
+
+PostgreSQL stores a product's current price, discount, availability and size options. Each saved cart row records the customer, product, selected size and quantity. Orders keep a snapshot of the purchased lines and amounts, along with separate payment and fulfilment statuses. Later catalog edits therefore leave the original purchase intact.
+
+### 4. What happens if a product price or size changes during checkout?
+
+The database compares the cart the customer reviewed with the current products, selected sizes, quantities and prices. A changed line can invalidate the quote even when the total stays the same. If the quote no longer matches, checkout asks the customer to review the cart again before issuing a payment form.
+
+### 5. Why is the final price verified on the server?
+
+The amount displayed in the browser is a quote for the customer. PostgreSQL calculates the amount from stored product prices in paise and saves it with the order. The server uses that amount for the gateway request. When the payment response arrives, a different reported amount cannot settle the order.
+
+### 6. How does GCMT Shop integrate with CCAvenue?
+
+When online checkout is enabled, the server creates an encrypted form using the stored order reference, amount and shipping details. The browser submits it to CCAvenue. The payment endpoint decrypts the response, checks the expected fields and asks PostgreSQL to reconcile it with the stored order. Missing or invalid fields stop reconciliation. The live merchant contract still requires staging verification. [Payment lifecycle](docs/payment-lifecycle.md)
+
+### 7. Does opening the payment success page mean the payment succeeded?
+
+The confirmation page looks up the order using the current session and order reference. It shows payment as successful only when the stored order has a paid status. If the gateway response has yet to be recorded, the order can still show as pending. Another customer's reference cannot retrieve that customer's order.
+
+### 8. What happens if CCAvenue sends the same payment response twice?
+
+PostgreSQL locks the order and compares the incoming result with its recorded receipt. It can record a matching repeat as a duplicate without removing any more items from the cart. The unique tracking reference also prevents one gateway capture from settling two orders. Conflicting evidence can be flagged for review.
+
+### 9. What happens if a customer closes the browser during checkout?
+
+The customer can return with the same identity and check the order status. If the server never released the prepared form, a new checkout action can recheck the cart. Once a form has been released, the server returns the existing order reference while it remains unresolved. That avoids issuing a second payable form when the first may have reached CCAvenue.
+
+### 10. Why are PostgreSQL transactions important for payments?
+
+A successful reconciliation records the receipt, marks the order paid, updates the purchased cart rows and writes a payment event in one transaction. If a write fails, all of those changes roll back together. A valid response can then be retried without leaving the order paid but missing its receipt or applying the cart change twice.
+
+### 11. How are customer records and admin features protected?
+
+Supabase row-level security limits which rows a customer's session can read or change. The staff interface checks the user's stored role, and database policies enforce staff permissions on direct requests. Since the Node.js service client can bypass those policies, API handlers verify the session and explicitly check the order owner or staff role before granting access.
+
+### 12. How does cash on delivery work?
+
+When COD is enabled, checkout verifies the cart and price, then saves a cash-due order and removes the purchased cart items in one transaction. Eligible orders can later be marked collected by an authorized staff member who provides a receipt reference. The database records who collected the cash and keeps that event separate from online gateway receipts.
+
+### 13. How does the website generate and validate PDF invoices?
+
+The browser builds the invoice from the stored order snapshot and escapes order text before rendering it. It checks in paise that each unit price multiplied by its quantity matches the stored line total, then compares their sum with the stored order total. If the values are missing or inconsistent, invoice generation stops for review.
+
+### 14. How was the application tested without charging real money?
+
+The browser tests run the built app against local identities, synthetic orders and a simulated gateway. Vitest covers handlers and database policies, while native PostgreSQL tests exercise concurrent writes, duplicate responses and rollback. The simulator verifies how the application reacts to controlled payment responses. Live CCAvenue processing and hosted database configuration still need staging validation.
+
+## Current status and limitations
+
+The checked-in checkout flow was verified locally against synthetic services. The commercial storefront used an earlier payment integration when it was inspected on November 23, 2026. The simulator verifies application behavior under controlled responses. Merchant acceptance, hosted schema compatibility and the production cutover still require separate staging validation. [Deployment and recovery](docs/deployment.md)
+
+## Project structure and documentation
+
+```text
+src/                  Storefront, customer account and staff screens
+api/                  Same-origin HTTP entry points
+server/               Checkout, order lookup and payment handlers
+shared/               Gateway settings shared by browser and server
+supabase/             Database bootstrap, migrations and local configuration
+scripts/              Local preview and verification commands
+tests/                Handler, database and browser regression suites
+docs/                 Technical guides, review evidence and deployment notes
 ```
 
-On Linux CI hosts, use `npx playwright install --with-deps chromium` to install the browser's system dependencies too. The browser suite runs against isolated local identity, database, and payment fixtures; it does not use production accounts or a live payment gateway.
+- [Checkout and payment lifecycle](docs/payment-lifecycle.md)
+- [Database and security review](docs/engineering-audit.md)
+- [Common engineering questions](#common-engineering-questions)
+- [Testing and verification](#testing)
+- [Deployment, staging and recovery](docs/deployment.md)
 
-The final local suite passed 49 Vitest cases, 15 native PostgreSQL cases and 15 Chromium cases. The merchant sandbox, hosted Auth and Storage, deployed schema and access policies, credential retirement, and production routing still require owner evidence. The reconciliation worker has an injectable interface and requires a merchant transport and scheduler. Production release remains blocked.
+## Attribution
 
-## Deployment
-
-The application and its server endpoints can be configured on Vercel using these build settings:
-
-| Setting | Value |
-| --- | --- |
-| Project root | Repository root |
-| Framework preset | Vite |
-| Install command | `npm ci` |
-| Build command | `npm run build` |
-| Output directory | `build` |
-
-The repository includes API routing, client-side navigation, and response security headers. Follow [deployment preparation](docs/deployment.md) to configure a staging environment and validate the service cutover before production.
-
-Run `npm run release:check` with the intended deployment variables in the process environment before enabling checkout. This command does not load `.env.local` automatically or verify deployed database policies, credential rotation, or merchant settings. A successful build alone can still leave online checkout disabled.
-
-When adapting the project for another domain, review the website metadata, sitemap, analytics settings, authentication redirects, and service configuration before publication.
-
-## Contributing and Security
-
-- Use approved development services and test data for contributions.
-- Keep credentials, merchant secrets, customer records, and private configuration out of commits, screenshots, and public discussions.
-- Keep privileged service credentials on the server and review access policies as part of backend changes.
-- Coordinate security reports privately with the maintainer. Avoid publishing sensitive findings or reproduction details in public issues or pull requests.
-
-## Repository
-
-Source and project updates: [gcmt1/gcmt-vercel-webiste-vedpatel-project](https://github.com/gcmt1/gcmt-vercel-webiste-vedpatel-project).
+Application development by Ved Patel and the contributors recorded in Git history. GCMT Herbal branding and commercial product imagery belong to Gold Coin Multi-Trade Private Limited or their respective rights holders. Third-party libraries retain their own licenses.
