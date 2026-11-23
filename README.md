@@ -1,4 +1,4 @@
-# GCMT Shop — Full-Stack Ecommerce and Order Management
+# GCMT Shop — Full-Stack Ecommerce and Order Management.
 
 GCMT Shop is a React storefront and staff workspace for GCMT Herbal. Customers can browse products, choose sizes, manage a cart and follow their orders. Staff manage the catalog, product images, order fulfilment, enquiries and newsletter subscriptions.
 
