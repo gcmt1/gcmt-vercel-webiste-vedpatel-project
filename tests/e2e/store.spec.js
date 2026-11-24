@@ -357,6 +357,7 @@ test("a customer can submit, edit with the keyboard and remove their own review"
 }) => {
   await session(page, request);
   await page.goto("/product/aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa");
+  await page.getByText("Customer reviews", { exact: true }).click();
   const rating = page.getByRole("button", { name: "Rate 4 of 5" });
   await rating.focus();
   await page.keyboard.press("Enter");

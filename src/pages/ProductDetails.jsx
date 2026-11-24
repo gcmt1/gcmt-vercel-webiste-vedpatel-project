@@ -1,13 +1,15 @@
 import DefaultProductImage from "../assets/product.png";
 import React, { useState, useEffect } from 'react';
-import { useParams } from 'react-router-dom';
+import { createPortal } from 'react-dom';
+import { Link as RouterLink, useParams } from 'react-router-dom';
 import {
-  Star, ShoppingCart, Heart, Share2,
-  ArrowLeft, ArrowRight, Check, ChevronDown,
+  Star, Heart, Share2,
+  ChevronLeft, ChevronRight, ChevronDown, MessageSquare, BookOpen, Leaf, ListChecks, Sparkles,
   X, Copy, MessageCircle, Facebook, Twitter, Mail, Link
 } from 'lucide-react';
 import { supabase } from '../supabaseClient';
 import '../styles/ProductDetails.css';
+import styles from '../styles/productDetail.module.css';
 import AddToCartButton from '../components/AddToCartButton';
 import { Helmet } from "react-helmet-async";
 import ReviewSystem from '../components/ReviewSystem';
@@ -20,9 +22,7 @@ const ProductDetail = () => {
   const [quantity, setQuantity] = useState(1);
   const [activeImage, setActiveImage] = useState(0);
   const [wishlistAdded, setWishlistAdded] = useState(false);
-  const [selectedTab, setSelectedTab] = useState('description');
   const [selectedVariant, setSelectedVariant] = useState('');
-  const [showCertModal, setShowCertModal] = useState(false);
   const [showShareModal, setShowShareModal] = useState(false);
   const [copySuccess, setCopySuccess] = useState(false);
 
@@ -116,6 +116,7 @@ const ProductDetail = () => {
           certifications: [], // Empty array as default
         };
 
+        setActiveImage(0);
         setProduct(productData);
         setSelectedVariant(variants[0] || '');
 
@@ -361,266 +362,116 @@ const ProductDetail = () => {
     </script>
   </Helmet>
 
-    <div className="product-page">
-      <div className="container">
-        <div className="breadcrumb">
-          <span>Home</span> &gt; <span>Products</span> &gt; <span className="current">{product.name}</span>
-        </div>
-
-        <div className="product-main">
-          {/* Product Gallery */}
-          <section className="product-gallery">
-            <div className="gallery-main">
-
-              
-              <div className="main-image-container">
-                <img 
-                  src={product.images[activeImage]} 
-                  alt={`${product.name} - Image ${activeImage + 1}`} 
-                  className="main-image"
-                  onError={handleImageError}
-                />
-                {product.discount && (
-                  <span className="discount-badge">{product.discount}</span>
-                )}
-                {/* Image counter for multiple images */}
-                {product.images.length > 1 && (
-                  <div className="image-counter">
-                    {activeImage + 1} / {product.images.length}
-                  </div>
-                )}
-              </div>
-              
-              <button 
-                className="gallery-nav next"
-                onClick={() => handleImageNavigation('next')}
-                aria-label="Next image"
-                disabled={product.images.length <= 1}
-                style={{ opacity: product.images.length <= 1 ? 0.5 : 1 }}
-              >
-                <ArrowRight size={20} />
-              </button>
+    <div className={styles.page}>
+      <div className={styles.content}>
+        <nav className={styles.crumb} aria-label="Breadcrumb">
+          <RouterLink to="/">Home</RouterLink><span aria-hidden="true">/</span>
+          <RouterLink to="/products">Products</RouterLink>
+        </nav>
+        <div className={styles.hero}>
+          <section className={styles.gallery} aria-label="Product photos">
+            <div className={styles.stage}>
+              <img src={product.images[activeImage]} alt={`${product.name} · photo ${activeImage + 1}`} onError={handleImageError} />
+              {product.images.length > 1 && (
+                <div className={styles.pager}>
+                  <button type="button" aria-label="Previous image" onClick={() => handleImageNavigation('prev')}><ChevronLeft /></button>
+                  <span>{activeImage + 1} / {product.images.length}</span>
+                  <button type="button" aria-label="Next image" onClick={() => handleImageNavigation('next')}><ChevronRight /></button>
+                </div>
+              )}
             </div>
-            
-            {/* Thumbnail gallery - only show if multiple images */}
             {product.images.length > 1 && (
-              <div className="image-thumbnails">
+              <div className={styles.thumbnails}>
                 {product.images.map((img, index) => (
-                  <button
-                    key={index}
-                    className={`thumbnail ${activeImage === index ? 'active' : ''}`}
-                    onClick={() => handleThumbnailClick(index)}
-                    aria-label={`View image ${index + 1}`}
-                  >
-                    <img 
-                      src={img} 
-                      alt={`${product.name} thumbnail ${index + 1}`}
-                      onError={handleImageError}
-                    />
+                  <button key={index} onClick={() => handleThumbnailClick(index)} aria-label={`View image ${index + 1}`} aria-pressed={index === activeImage}>
+                    <img src={img} alt="" onError={handleImageError} />
                   </button>
                 ))}
               </div>
             )}
           </section>
-
-          {/* Product Information */}
-          <section className="product-info">
-            <h1 className="product-title">{product.name}</h1>
-            
-            <div className="product-meta">
-              <div className="product-rating">
-                {product.rating > 0 && product.rating <= 5 && renderStars(product.rating)}
-              </div>
+          <section className={styles.purchase} aria-labelledby="product-title">
+            <h1 id="product-title">{product.name}</h1>
+            <div className={styles.price}>
+              <strong>₹{product.discount ? product.discountPrice : product.price}</strong>
+              {product.discount && <><del>₹{product.price}</del><span>Save {product.discount}</span></>}
             </div>
-            
-            <p className="product-short-desc">{product.shortDescription}</p>
-
-            <div className="product-pricing">
-              {product.discount ? (
-                <>
-                  <span className="price-current">₹{product.discountPrice}</span>
-                  <span className="price-original">₹{product.price}</span>
-                  <span className="price-save">Save {product.discount}</span>
-                </>
-              ) : (
-                <span className="price-current">₹{product.price}</span>
+            {product.rating > 0 && product.rating <= 5 && (
+              <div aria-label={`Rated ${product.rating} out of 5`}>{renderStars(product.rating)}</div>
+            )}
+            {product.shortDescription && <p>{product.shortDescription}</p>}
+            <div className={styles.controls}>
+              {product.variants.length > 0 && (
+                <fieldset>
+                  <legend>Pack size</legend>
+                  <div className={styles.options}>
+                    {product.variants.map(v => (
+                      <button key={v} aria-pressed={selectedVariant === v} onClick={() => setSelectedVariant(v)}>{v}</button>
+                    ))}
+                  </div>
+                </fieldset>
               )}
-            </div>
-
-            {product.variants.length > 0 && (
-              <div className="product-variants">
-                <h3>Size</h3>
-                <div className="variant-options">
-                  {product.variants.map(v => (
-                    <button 
-                      key={v} 
-                      className={`variant-btn ${selectedVariant === v ? 'selected' : ''}`} 
-                      onClick={() => setSelectedVariant(v)}
-                    >
-                      {v}
-                    </button>
-                  ))}
+              <fieldset>
+                <legend>Quantity</legend>
+                <div className={styles.quantity}>
+                  <button aria-label="Decrease quantity" onClick={decreaseQuantity} disabled={quantity <= 1}>−</button>
+                  <input type="number" value={quantity} readOnly aria-label="Product quantity" />
+                  <button aria-label="Increase quantity" onClick={increaseQuantity} disabled={quantity >= product.quantityLimit}>+</button>
                 </div>
-              </div>
-            )}
-
-            <div className="product-purchase">
-              <div className="quantity-selector">
-                <button 
-                  className="quantity-btn" 
-                  onClick={decreaseQuantity}
-                  disabled={quantity <= 1}
-                >
-                  -
-                </button>
-                <input 
-                  type="number" 
-                  value={quantity} 
-                  readOnly 
-                  aria-label="Product quantity"
-                />
-                <button 
-                  className="quantity-btn" 
-                  onClick={increaseQuantity}
-                  disabled={quantity >= product.quantityLimit}
-                >
-                  +
-                </button>
-              </div>
-              
-              <div className="purchase-actions">
-                <AddToCartButton 
-                  productId={product.id} 
-                  quantity={quantity} variant={selectedVariant} disabled={product.quantityLimit < quantity}
-                  className="btn-primary" 
-                />
-                
-                <button 
-                  className={`btn-icon ${wishlistAdded ? 'active' : ''}`}
-                  onClick={addToWishlist}
-                  aria-label="Add to wishlist"
-                >
-                  <Heart size={20} fill={wishlistAdded ? "#e74c3c" : "none"} />
-                </button>
-                
-                <button 
-                  className="btn-icon"
-                  onClick={handleShare}
-                  aria-label="Share product"
-                >
-                  <Share2 size={20} />
-                </button>
-              </div>
+              </fieldset>
             </div>
-
-            {product.benefits.length > 0 && (
-              <div className="product-benefits">
-                <h3>Key Benefits</h3>
-                <ul>
-                  {product.benefits.map((benefit, i) => (
-                    <li key={i}>
-                      <Check size={16} className="benefit-icon" />
-                      {benefit}
-                    </li>
-                  ))}
-                </ul>
-              </div>
-            )}
+            <div className={styles.actions}>
+              <AddToCartButton productId={product.id} quantity={quantity} variant={selectedVariant} disabled={product.quantityLimit < quantity} />
+              <button onClick={addToWishlist} aria-label="Add to wishlist" aria-pressed={wishlistAdded}><Heart size={20} fill={wishlistAdded ? 'currentColor' : 'none'} /></button>
+              <button onClick={handleShare} aria-label="Share product"><Share2 size={20} /></button>
+            </div>
           </section>
         </div>
 
-        {/* Product Details Tabs */}
-        <section className="product-details-tabs">
-          <div className="tabs-header">
-            <button 
-              className={`tab-btn ${selectedTab === 'description' ? 'active' : ''}`}
-              onClick={() => setSelectedTab('description')}
-            >
-              Description
-            </button>
-            <button 
-              className={`tab-btn ${selectedTab === 'ingredients' ? 'active' : ''}`}
-              onClick={() => setSelectedTab('ingredients')}
-            >
-              Ingredients
-            </button>
-            <button 
-              className={`tab-btn ${selectedTab === 'how-to-use' ? 'active' : ''}`}
-              onClick={() => setSelectedTab('how-to-use')}
-            >
-              How to Use
-            </button>
-          </div>
-          
-          <div className="tab-content">
-            {selectedTab === 'description' && (
-              <div className="tab-panel">
-                <h3>Product Description</h3>
+        <section className={styles.information} aria-labelledby="product-information">
+          <h2 id="product-information">Product information</h2>
+          <div className={styles.infoGrid}>
+            {product.descriptionContent && (
+              <section className={styles.card}>
+                <h3><BookOpen aria-hidden="true" />Description</h3>
                 <p>{product.descriptionContent}</p>
-                
-                {product.whyChoose && (
-                  <>
-                    <h3>Why Choose Our Product?</h3>
-                    <p>{product.whyChoose}</p>
-                  </>
-                )}
-              </div>
+              </section>
             )}
-
-            {selectedTab === 'ingredients' && (
-              <div className="tab-panel">
-                {product.ingredientsHeading && <h3>{product.ingredientsHeading}</h3>}
+            {(product.ingredientsHeading || product.ingredientsDescription || product.ingredientsSubheading || product.ingredients.length > 0) && (
+              <section className={`${styles.card} ${styles.ingredients}`}>
+                <h3><Leaf aria-hidden="true" />Ingredients</h3>
+                {product.ingredientsHeading && <h4>{product.ingredientsHeading}</h4>}
                 {product.ingredientsDescription && <p>{product.ingredientsDescription}</p>}
-                
                 {product.ingredientsSubheading && <h4>{product.ingredientsSubheading}</h4>}
-                
-                {product.ingredients.length > 0 && (
-                  <table className="ingredients-table">
-                    <thead>
-                      <tr>
-                        <th>Ingredient</th>
-                        <th>Percentage</th>
-                      </tr>
-                    </thead>
-                    <tbody>
-                      {product.ingredients.map((ing, i) => (
-                        <tr key={i}>
-                          <td>{ing.name}</td>
-                          <td>{ing.percentage}</td>
-                        </tr>
-                      ))}
-                    </tbody>
-                  </table>
-                )}
-              </div>
+                {product.ingredients.length > 0 && <ul>{product.ingredients.map((ing, i) => <li key={i}>{ing.name}{ing.percentage && ` · ${ing.percentage}`}</li>)}</ul>}
+              </section>
             )}
-
-            {selectedTab === 'how-to-use' && (
-              <div className="tab-panel">
-                {product.howToUseHeading && <h3>{product.howToUseHeading}</h3>}
+            {(product.howToUseHeading || product.howToUseDescription || product.proTips) && (
+              <section className={styles.card}>
+                <h3><ListChecks aria-hidden="true" />{product.howToUseHeading || 'How to use'}</h3>
                 {product.howToUseDescription && <p>{product.howToUseDescription}</p>}
-                
-                {product.proTips && (
-                  <>
-                    <h4>Pro Tips</h4>
-                    <p>{product.proTips}</p>
-                  </>
-                )}
-              </div>
+                {product.proTips && <><h4>Pro Tips</h4><p>{product.proTips}</p></>}
+              </section>
+            )}
+            {(product.benefits.length > 0 || product.whyChoose) && (
+              <section className={styles.card}>
+                <h3><Sparkles aria-hidden="true" />Benefits</h3>
+                {product.benefits.length > 0 && <ul>{product.benefits.map((item, i) => <li key={i}>{item}</li>)}</ul>}
+                {product.whyChoose && <><h4>Why Choose Our Product?</h4><p>{product.whyChoose}</p></>}
+              </section>
             )}
           </div>
-        </section>
-
-        {/* Reviews Section - Now using ReviewSystem component */}
-        <section className="product-reviews">
-          <ReviewSystem productId={product.id} />
+          <details className={styles.reviews}>
+            <summary><MessageSquare size={20} />Customer reviews<ChevronDown size={20} /></summary>
+            <ReviewSystem productId={product.id} />
+          </details>
         </section>
       </div>
 
       {/* Share Modal */}
-      {showShareModal && (
-        <div className="modal-overlay" onClick={() => setShowShareModal(false)}>
-          <div className="share-modal" onClick={(e) => e.stopPropagation()}>
+      {showShareModal && createPortal(
+        <div className="modal-overlay active" onClick={() => setShowShareModal(false)}>
+          <div className="share-modal" role="dialog" aria-label="Share product" aria-modal="true" onClick={(e) => e.stopPropagation()}>
             <div className="modal-header">
               <h3>Share Product</h3>
               <button 
@@ -680,7 +531,7 @@ const ProductDetail = () => {
               </div>
             </div>
           </div>
-        </div>
+        </div>, document.body
       )}
     </div>
     </>
