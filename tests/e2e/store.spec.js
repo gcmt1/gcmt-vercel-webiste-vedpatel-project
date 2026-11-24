@@ -182,6 +182,22 @@ test("administrator CSV export quotes text and neutralizes formulas", async ({
   expect(text).toContain('"A ""quoted"", customer"');
   expect(text).toContain('"\t=1+1"');
 });
+test("mobile Buy Now takes the selected pack and quantity to checkout", async ({
+  page,
+  request,
+}) => {
+  await request.post("/__test/reset?mode=variants");
+  await page.setViewportSize({ width: 320, height: 640 });
+  await page.goto("/product/aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa");
+  await expect(page.getByRole("button", { name: "Add to Cart" })).toBeVisible();
+  await page.getByRole("button", { name: "Large", exact: true }).click();
+  await page.getByRole("button", { name: "Increase quantity" }).click();
+  await page.getByRole("button", { name: "Buy Now", exact: true }).click();
+  await expect(page).toHaveURL(/\/checkout$/);
+  await expect(page.getByText("Test toothpaste · Large")).toBeVisible();
+  await expect(page.getByText("Qty: 2", { exact: true })).toBeVisible();
+});
+
 test("the selected GCMT size survives the guest basket, account merge and checkout snapshot", async ({
   page,
   request,

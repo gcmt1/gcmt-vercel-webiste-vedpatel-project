@@ -421,7 +421,7 @@ const ProductDetail = () => {
               </fieldset>
             </div>
             <div className={styles.actions}>
-              <AddToCartButton productId={product.id} quantity={quantity} variant={selectedVariant} disabled={product.quantityLimit < quantity} />
+              <AddToCartButton showBuyNow productId={product.id} quantity={quantity} variant={selectedVariant} disabled={product.quantityLimit < quantity} />
               <button onClick={addToWishlist} aria-label="Add to wishlist" aria-pressed={wishlistAdded}><Heart size={20} fill={wishlistAdded ? 'currentColor' : 'none'} /></button>
               <button onClick={handleShare} aria-label="Share product"><Share2 size={20} /></button>
             </div>

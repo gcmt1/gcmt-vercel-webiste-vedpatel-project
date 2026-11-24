@@ -155,6 +155,22 @@
 .reviews summary svg:last-child { margin-left: auto; }
 .reviews[open] summary { border-bottom: 1px solid var(--line); }
 .reviews[open] summary svg:last-child { transform: rotate(180deg); }
+.actions button[data-action="buy-now"] { display: none; }
+@media (max-width: 760px), (hover: none) and (pointer: coarse) {
+  .actions button:first-child, .actions button[data-action="buy-now"] {
+    box-sizing: border-box;
+    flex: 1 1 calc(50% - 4px);
+    padding: 8px;
+  }
+  .actions button:first-child { background: white; color: var(--green); }
+  .actions button[data-action="buy-now"] {
+    display: inline-grid;
+    color: white;
+    background: var(--green);
+    border-color: var(--green);
+    font-weight: 650;
+  }
+}
 @media (max-width: 760px) {
   .hero, .infoGrid { grid-template-columns: 1fr; }
   .gallery { padding: 6px; border-radius: 16px; }
