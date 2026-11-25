@@ -1,3 +1,4 @@
+@scope ([data-page="auth"]) {
 .auth-page {
     display: flex;
     flex-direction: column;
@@ -129,4 +130,5 @@
   color: #856404;
   font-size: 0.9rem;
   font-weight: 500;
+}
 }

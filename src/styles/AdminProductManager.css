@@ -1,3 +1,4 @@
+@scope ([data-page="admin-product-manager"]) {
 /* ============================================
    ADMIN PRODUCT MANAGER STYLES
    Prefix: apm- (Admin Product Manager)
@@ -1291,3 +1292,4 @@
     }
 }
 */
+}

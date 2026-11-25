@@ -1,3 +1,4 @@
+@scope ([data-page="about"]) {
 /* ===================================
    PROFESSIONAL ABOUT US PAGE CSS
    Production-Ready & Fully Responsive
@@ -965,4 +966,5 @@ body {
     color: #000 !important;
     border: 1px solid #000 !important;
   }
+}
 }

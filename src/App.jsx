@@ -1,86 +1,168 @@
-import React from "react";
-import { BrowserRouter as Router, Routes, Route } from "react-router-dom";
+import React, { lazy, Suspense } from "react";
+import {
+  BrowserRouter,
+  Routes,
+  Route,
+  Navigate,
+  useLocation,
+} from "react-router-dom";
+import { SessionContextProvider } from "@supabase/auth-helpers-react";
+import { HelmetProvider } from "react-helmet-async";
+import { supabase } from "./supabaseClient";
 import { AppProvider } from "./AppContext";
 import { ToastProvider } from "./components/ToastContext";
-import RequireAdmin from "./components/RequireAdmin";
-import { HelmetProvider } from "react-helmet-async";
-
-import HomePage from "./pages/HomePage";
-import ProductListingPage from "./pages/ProductListings";
-import AboutPage from "./pages/AboutPage";
-import BlogPage from "./pages/BlogPage";
-import ContactPage from "./pages/ContactPage";
-import ProductDetails from "./pages/ProductDetails";
-import FAQPage from "./pages/FAQPage";
 import Navbar from "./components/Navbar";
-import CartPage from "./pages/CartPage";
-import AuthPage from "./pages/AuthPage";
-import ProfilePage from "./pages/ProfilePage";
-import Checkout from "./pages/CheckOut";
-import Tnc from "./pages/TnC";
 import Footer from "./components/Footer";
 import ScrollToTop from "./components/ScrollToTop";
-const AdminOrder = React.lazy(() => import("./pages/AdminOrder"));
-import PaymentSuccess from "./pages/PaymentSuccess";
-import PaymentCancel from "./pages/PaymentCancel";
-const AdminLanding = React.lazy(() => import("./pages/AdminPage"));
-const AdminSubscription = React.lazy(() => import("./pages/AdminSubscription"));
-const AdminContactForm = React.lazy(() => import("./pages/AdminContactForm"));
-import YourOrders from "./pages/YourOrders"; // ✅ Fix: Capital Y
-const AdminProductManager = React.lazy(() => import("./pages/AdminProductManager"));
+import { Notice, Page, Button } from "./components/ui";
 import "./App.css";
+const HomePage = lazy(() => import("./pages/HomePage"));
+const ProductListings = lazy(() => import("./pages/ProductListings"));
+const ProductDetails = lazy(() => import("./pages/ProductDetails"));
+const CartPage = lazy(() => import("./pages/CartPage"));
 
-function App() {
+const YourOrders = lazy(() => import("./pages/YourOrders"));
+const ProfilePage = lazy(() => import("./pages/ProfilePage"));
+const PaymentCancel = lazy(() => import("./pages/PaymentCancel"));
+const AuthPage = lazy(() => import("./pages/AuthPage"));
+const AboutPage = lazy(() => import("./pages/AboutPage"));
+const BlogPage = lazy(() => import("./pages/BlogPage"));
+const FAQPage = lazy(() => import("./pages/FAQPage"));
+const ContactPage = lazy(() => import("./pages/ContactPage"));
+const TnC = lazy(() => import("./pages/TnC"));
+const AdminPage = lazy(() => import("./pages/AdminPage"));
+const AdminOrder = lazy(() => import("./pages/AdminOrder"));
+const AdminProductManager = lazy(() => import("./pages/AdminProductManager"));
+const AdminSubscription = lazy(() => import("./pages/AdminSubscription"));
+const AdminContactForm = lazy(() => import("./pages/AdminContactForm"));
+const Checkout = lazy(() => import("./pages/CheckOut"));
+const AdminShell = lazy(() => import("./admin/AdminShell"));
+function Home() {
+  const { hash } = useLocation();
+  return hash.split("?")[0] === "#/payment-success" ? (
+    <Navigate replace to="/your-orders" />
+  ) : (
+    <HomePage />
+  );
+}
+function Shell() {
+  const { pathname } = useLocation();
+  return (
+    <>
+      <ScrollToTop />
+      <a className="gcmt-skip" href="#content">
+        Skip to content
+      </a>
+      <header data-ui="navbar">
+        <Navbar />
+      </header>
+      <main
+        id="content"
+        tabIndex="-1"
+        data-page={pathname.split("/")[1] || "home"}
+      >
+        <Suspense
+          fallback={
+            <Page>
+              <Notice>Loading…</Notice>
+            </Page>
+          }
+        >
+          <Routes>
+            <Route path="/" element={<Home />} />
+            <Route path="/products" element={<ProductListings />} />
+            <Route path="/product/:id" element={<ProductDetails />} />
+            <Route path="/cart" element={<CartPage />} />
+            <Route path="/checkout" element={<Checkout />} />
+            <Route path="/your-orders" element={<YourOrders />} />
+            <Route path="/profile" element={<ProfilePage />} />
+            <Route path="/payment-cancel" element={<PaymentCancel />} />
+            <Route path="/payment-failure" element={<PaymentCancel />} />
+            <Route path="/payment-pending" element={<PaymentCancel />} />
+            <Route path="/auth" element={<AuthPage />} />
+            <Route path="/about" element={<AboutPage />} />
+            <Route path="/blog" element={<BlogPage />} />
+            <Route path="/faq" element={<FAQPage />} />
+            <Route path="/contact" element={<ContactPage />} />
+            <Route path="/tnc" element={<TnC />} />
+            <Route
+              path="/admin-landing"
+              element={
+                <AdminShell>
+                  <AdminPage />
+                </AdminShell>
+              }
+            />
+            <Route
+              path="/admin-order"
+              element={
+                <AdminShell>
+                  <AdminOrder />
+                </AdminShell>
+              }
+            />
+            <Route
+              path="/admin-product-manager"
+              element={
+                <AdminShell>
+                  <AdminProductManager />
+                </AdminShell>
+              }
+            />
+            <Route
+              path="/admin-subscription"
+              element={
+                <AdminShell>
+                  <AdminSubscription />
+                </AdminShell>
+              }
+            />
+            <Route
+              path="/admin-contactform"
+              element={
+                <AdminShell>
+                  <AdminContactForm />
+                </AdminShell>
+              }
+            />
+            <Route path="/terms-and-conditions" element={<TnC />} />
+            <Route
+              path="/payment-success"
+              element={<PaymentCancel />}
+            />
+            <Route path="/login" element={<Navigate replace to="/auth" />} />
+            <Route
+              path="*"
+              element={
+                <Page>
+                  <h1>Page unavailable</h1>
+                  <Button to="/products">Shop products</Button>
+                </Page>
+              }
+            />
+          </Routes>
+        </Suspense>
+      </main>
+      {!pathname.startsWith("/admin-") && (
+        <div data-ui="footer">
+          <Footer />
+        </div>
+      )}
+    </>
+  );
+}
+export default function App() {
   return (
     <HelmetProvider>
-      <AppProvider>
-        <ToastProvider>
-          <Router>
-            <ScrollToTop />
-            <div className="app-container">
-              <header className="app-header">
-                <Navbar />
-              </header>
-
-              <main className="app-main">
-                <React.Suspense fallback={<p role="status">Loading page…</p>}>
-                <Routes>
-                  <Route path="/" element={<HomePage />} />
-                  <Route path="/products" element={<ProductListingPage />} />
-                  <Route path="/product/:id" element={<ProductDetails />} />
-                  <Route path="/about" element={<AboutPage />} />
-                  <Route path="/blog" element={<BlogPage />} />
-                  <Route path="/contact" element={<ContactPage />} />
-                  <Route path="/faq" element={<FAQPage />} />
-                  <Route path="/cart" element={<CartPage />} />
-                  <Route path="/profile" element={<ProfilePage />} />
-                  <Route path="/auth" element={<AuthPage />} />
-                  <Route path="/checkout" element={<Checkout />} />
-                  <Route path="/terms-and-conditions" element={<Tnc />} />
-                  <Route path="/tnc" element={<Tnc />} />
-                  <Route path="/payment-success" element={<PaymentSuccess />} />
-                  <Route path="/payment-cancel" element={<PaymentCancel />} />
-                  <Route path="/admin-order" element={<RequireAdmin><AdminOrder /></RequireAdmin>} />
-                  <Route path="/admin-landing" element={<RequireAdmin><AdminLanding /></RequireAdmin>} />
-                  <Route path="/admin-subscription" element={<RequireAdmin><AdminSubscription /></RequireAdmin>} />
-                  <Route path="/admin-contactform" element={<RequireAdmin><AdminContactForm /></RequireAdmin>} />
-                  <Route path="/your-orders" element={<YourOrders />} /> {/* ✅ Fix case */}
-                  <Route path="/admin-product-manager" element={<RequireAdmin><AdminProductManager /></RequireAdmin>} /> {/* ✅ Fix: Use correct component name */}
-                  {/* Catch-all route for undefined paths */}
-                  <Route path="*" element={<section><h1>Page not found</h1><a href="/products">Browse GCMT products</a></section>} />
-                </Routes></React.Suspense>
-              </main>
-
-              <footer className="app-footer">
-                <Footer />
-                <p>© {new Date().getFullYear()} Chase WorldWide. All rights reserved.</p>
-              </footer>
-            </div>
-          </Router>
-        </ToastProvider>
-      </AppProvider>
+      <SessionContextProvider supabaseClient={supabase}>
+        <AppProvider>
+          <ToastProvider>
+            <BrowserRouter>
+              <Shell />
+            </BrowserRouter>
+          </ToastProvider>
+        </AppProvider>
+      </SessionContextProvider>
     </HelmetProvider>
   );
 }
-
-export default App;

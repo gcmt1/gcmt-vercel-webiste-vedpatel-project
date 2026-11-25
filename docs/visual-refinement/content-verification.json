@@ -1,0 +1,254 @@
+{
+  "home": {
+    "route": "/",
+    "beforeAndAfterSHA256": "86d3a29a1f8e44807d40b9d641137b36884d79e06c20fb2595e784e749045672",
+    "textNodes": 59,
+    "links": 16,
+    "controls": 18,
+    "images": 8,
+    "disclosures": 2
+  },
+  "shop": {
+    "route": "/products",
+    "beforeAndAfterSHA256": "cb6d85ba3b4551bbd72058b34036c2f9cc66a57ad89c0d40cd8c232830e66fd0",
+    "textNodes": 33,
+    "links": 17,
+    "controls": 8,
+    "images": 2,
+    "disclosures": 0
+  },
+  "product": {
+    "route": "/product/90a4321f-582f-4463-a136-b1694466ed78",
+    "beforeAndAfterSHA256": "c369353913999a4508dd1e41d70f7b5156aa2442cada474252075726ebc6512a",
+    "textNodes": 55,
+    "links": 16,
+    "controls": 17,
+    "images": 8,
+    "disclosures": 1
+  },
+  "cart": {
+    "route": "/cart",
+    "beforeAndAfterSHA256": "d78819840e15625a4d651a0ff9b0af281677461567cc3e8968b534c8759a940f",
+    "textNodes": 33,
+    "links": 15,
+    "controls": 6,
+    "images": 2,
+    "disclosures": 0
+  },
+  "checkout": {
+    "route": "/checkout",
+    "beforeAndAfterSHA256": "c52e6b32e73d9f782d2c94a43b805db27667f650c2e1123dbfd08790aca64a3c",
+    "textNodes": 46,
+    "links": 14,
+    "controls": 13,
+    "images": 2,
+    "disclosures": 0
+  },
+  "orders": {
+    "route": "/your-orders",
+    "beforeAndAfterSHA256": "fda107f41c1f7cfd892c2bd74275fa74784c56fce6642e09391ac397cba33a85",
+    "textNodes": 44,
+    "links": 14,
+    "controls": 6,
+    "images": 1,
+    "disclosures": 1
+  },
+  "returned": {
+    "route": "/payment-success",
+    "beforeAndAfterSHA256": "79b732f62fd436e73ade2c419b5bf692e3fc95dc573fd7a767842d65507c1b41",
+    "textNodes": 21,
+    "links": 15,
+    "controls": 3,
+    "images": 1,
+    "disclosures": 0
+  },
+  "cancel": {
+    "route": "/payment-cancel",
+    "beforeAndAfterSHA256": "f40062c9831f19de3955f5bb94611bc7407cef12f0cead06ac630c83d2480a1f",
+    "textNodes": 21,
+    "links": 15,
+    "controls": 3,
+    "images": 1,
+    "disclosures": 0
+  },
+  "account": {
+    "route": "/profile",
+    "beforeAndAfterSHA256": "4dcf364cf1caf851ee556b1b924640c87c9305e46a47b87dbbb01303cb88212b",
+    "textNodes": 26,
+    "links": 15,
+    "controls": 4,
+    "images": 1,
+    "disclosures": 1
+  },
+  "auth": {
+    "route": "/auth",
+    "beforeAndAfterSHA256": "83e248d9eef3b58646d809054a70d525694f995fb5616f63e8ca0e38458cd610",
+    "textNodes": 23,
+    "links": 13,
+    "controls": 8,
+    "images": 1,
+    "disclosures": 0
+  },
+  "about": {
+    "route": "/about",
+    "beforeAndAfterSHA256": "a77e455b38f8dd4b960bf0b7fc7cbcd9bf43521acd96096e4ec0c95b8b1ebb39",
+    "textNodes": 25,
+    "links": 15,
+    "controls": 3,
+    "images": 2,
+    "disclosures": 0
+  },
+  "help": {
+    "route": "/faq",
+    "beforeAndAfterSHA256": "8c0954ab773181a73e4965d62081d08504e7e0740a28fcb541050312491b1b62",
+    "textNodes": 36,
+    "links": 18,
+    "controls": 8,
+    "images": 1,
+    "disclosures": 5
+  },
+  "contact": {
+    "route": "/contact",
+    "beforeAndAfterSHA256": "a4a17b42bf02bb4b01b2213b202cd7fb76f9526d71fe44716e9e8193a769a180",
+    "textNodes": 28,
+    "links": 15,
+    "controls": 8,
+    "images": 1,
+    "disclosures": 0
+  },
+  "journal": {
+    "route": "/blog",
+    "beforeAndAfterSHA256": "1f1f3c7aee6a5838674ec14e94122772335a9a5776634893e13b9978e5fe7533",
+    "textNodes": 48,
+    "links": 13,
+    "controls": 4,
+    "images": 1,
+    "disclosures": 0
+  },
+  "policy": {
+    "route": "/tnc",
+    "beforeAndAfterSHA256": "62fd8be65cb8f13bd85b98f4b51d35e4da5ad13648f45df5a3569f6bf0ae325b",
+    "textNodes": 89,
+    "links": 13,
+    "controls": 3,
+    "images": 1,
+    "disclosures": 0
+  },
+  "operations": {
+    "route": "/admin-landing",
+    "beforeAndAfterSHA256": "f65daa9af1644e13e2c81a3cc51e9db92842860c6f11d510ee924d70645efee0",
+    "textNodes": 21,
+    "links": 21,
+    "controls": 2,
+    "images": 1,
+    "disclosures": 0
+  },
+  "fulfillment": {
+    "route": "/admin-order",
+    "beforeAndAfterSHA256": "9950367fb7bc3668d9e3c9a85a150ea30c2d2a63319cca63beb9fc8c0fb8f6e4",
+    "textNodes": 49,
+    "links": 17,
+    "controls": 12,
+    "images": 1,
+    "disclosures": 0
+  },
+  "catalog": {
+    "route": "/admin-product-manager",
+    "beforeAndAfterSHA256": "07786c60a2aa6b51f88cb36eb1e70cb99a70d79eca0c3d7fe79fa52ea168b3d5",
+    "textNodes": 26,
+    "links": 17,
+    "controls": 7,
+    "images": 2,
+    "disclosures": 0
+  },
+  "subscribers": {
+    "route": "/admin-subscription",
+    "beforeAndAfterSHA256": "b4ea374c7ace67f97a89d5e1ddb1ea84e2c7b389606f408dda574763e5d36793",
+    "textNodes": 30,
+    "links": 17,
+    "controls": 10,
+    "images": 1,
+    "disclosures": 0
+  },
+  "enquiries": {
+    "route": "/admin-contactform",
+    "beforeAndAfterSHA256": "bd454231b66a2dbaa2d9be801559df5e1d908b4095508a04a7e4a05d53bea620",
+    "textNodes": 30,
+    "links": 17,
+    "controls": 10,
+    "images": 1,
+    "disclosures": 0
+  },
+  "multishop": {
+    "route": "/products",
+    "beforeAndAfterSHA256": "835e6224cfd3ad72f82d3a674213eed7ac28e7d07318878d97ea1e980d7c2c73",
+    "textNodes": 46,
+    "links": 20,
+    "controls": 14,
+    "images": 3,
+    "disclosures": 0
+  },
+  "direct": {
+    "route": "/checkout?buy=visual",
+    "beforeAndAfterSHA256": "b18f236e8eca237766a640553312515bdbc3ad8cf124532f98376d7fa971fe19",
+    "textNodes": 46,
+    "links": 14,
+    "controls": 13,
+    "images": 2,
+    "disclosures": 0
+  },
+  "terms": {
+    "route": "/terms-and-conditions",
+    "beforeAndAfterSHA256": "62fd8be65cb8f13bd85b98f4b51d35e4da5ad13648f45df5a3569f6bf0ae325b",
+    "textNodes": 89,
+    "links": 13,
+    "controls": 3,
+    "images": 1,
+    "disclosures": 0
+  },
+  "login": {
+    "route": "/login",
+    "beforeAndAfterSHA256": "83e248d9eef3b58646d809054a70d525694f995fb5616f63e8ca0e38458cd610",
+    "textNodes": 23,
+    "links": 13,
+    "controls": 8,
+    "images": 1,
+    "disclosures": 0
+  },
+  "failure": {
+    "route": "/payment-failure",
+    "beforeAndAfterSHA256": "79b732f62fd436e73ade2c419b5bf692e3fc95dc573fd7a767842d65507c1b41",
+    "textNodes": 21,
+    "links": 15,
+    "controls": 3,
+    "images": 1,
+    "disclosures": 0
+  },
+  "pending": {
+    "route": "/payment-pending",
+    "beforeAndAfterSHA256": "79b732f62fd436e73ade2c419b5bf692e3fc95dc573fd7a767842d65507c1b41",
+    "textNodes": 21,
+    "links": 15,
+    "controls": 3,
+    "images": 1,
+    "disclosures": 0
+  },
+  "missing": {
+    "route": "/missing-page",
+    "beforeAndAfterSHA256": "d6bd9a5a5146f42806aca00d7ec5aa89d6584af5f10a96a360d4697abd6d12f6",
+    "textNodes": 18,
+    "links": 14,
+    "controls": 3,
+    "images": 1,
+    "disclosures": 0
+  },
+  "hash": {
+    "route": "/#/payment-success",
+    "beforeAndAfterSHA256": "fda107f41c1f7cfd892c2bd74275fa74784c56fce6642e09391ac397cba33a85",
+    "textNodes": 44,
+    "links": 14,
+    "controls": 6,
+    "images": 1,
+    "disclosures": 1
+  }
+}

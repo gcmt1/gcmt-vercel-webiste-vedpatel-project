@@ -1,415 +1,448 @@
-import { gatewayUrls } from "../../shared/gateway.js";
-import React, { useState, useEffect, useRef } from 'react';
-import { supabase, ensureCheckoutUser } from '../supabaseClient';
-import { loadCart, mergeGuestCart } from '../utils/cart';
-import { authenticatedFetch } from '../utils/api';
-import { useAppContext } from '../AppContext';
-import { useToast } from '../components/ToastContext';
-import { useNavigate } from 'react-router-dom';
-import '../styles/CheckOut.css';
+import React, { useEffect, useLayoutEffect, useRef, useState } from "react";
+import { Link, useLocation } from "react-router-dom";
+import { CreditCard } from "lucide-react";
+import { supabase } from "../supabaseClient";
+import { useAppContext } from "../AppContext";
+import { changeIntent } from "../shop/intent";
+import { money, photos, quantityLimit } from "../shop/catalog";
+import { changeRow, total } from "../shop/cart";
+import {
+  attemptKey,
+  basketSignature,
+  lastAttemptKey,
+  reviewLines,
+  submitOrder,
+} from "../shop/checkout";
+import { Page, Button, Field, Notice, LoadingSkeleton } from "../components/ui";
+import QuantitySelector from "../components/QuantitySelector";
+import s from "../components/commerce.module.css";
+
+const fields = [
+  ["name", "Full name", "name"],
+  ["email", "Email address", "email", "email"],
+  ["phone", "Mobile number", "tel-national", "tel", "[0-9]{10}", "10 digits"],
+  ["street", "Street address", "street-address"],
+  ["city", "City", "address-level2"],
+  ["state", "State", "address-level1"],
+  ["pin", "PIN code", "postal-code", "text", "[0-9]{6}", "6 digits"],
+];
 
 export default function Checkout() {
-  const { user } = useAppContext();
-  const { showToast } = useToast();
-  const navigate = useNavigate();
-  const submitting = useRef(false);
+  const { search } = useLocation();
+  const { user, startingGuest } = useAppContext();
+  const id = new URLSearchParams(search).get("buy");
+  return (
+    <Page>
+      <div className={s.stack}>
+        <h1>Checkout</h1>
+        {startingGuest ? (
+          <Notice>Restoring session…</Notice>
+        ) : (
+          <Review
+            key={JSON.stringify([user?.id, id])}
+            owner={user?.id}
+            id={id}
+          />
+        )}
+      </div>
+    </Page>
+  );
+}
 
-
-  // Responsiveness
-  const [isMobile, setIsMobile] = useState(window.innerWidth < 768);
-
-  useEffect(() => {
-    const handleResize = () => setIsMobile(window.innerWidth < 768);
-    window.addEventListener('resize', handleResize);
-    return () => window.removeEventListener('resize', handleResize);
+function PaymentOverlay() {
+  const ref = useRef(null);
+  useLayoutEffect(() => {
+    const dialog = ref.current;
+    dialog.showModal();
+    return () => dialog.close();
   }, []);
 
-  // State Management
-  const [cartItems, setCartItems] = useState([]);
-  const [loadingCart, setLoadingCart] = useState(true);
-  const [loading, setLoading] = useState(false);
-  const [formSubmitted, setFormSubmitted] = useState(false);
-  const [formData, setFormData] = useState({
-    name: '',
-    email: '',
-    phone: '',
-    street: '',
-    city: '',
-    state: '',
-    pincode: '',
-  });
+  return (
+    <dialog
+      ref={ref}
+      className={s.paymentOverlay}
+      aria-labelledby="gateway-title"
+      aria-describedby="gateway-description"
+      onCancel={(event) => event.preventDefault()}
+    >
+      <span aria-hidden="true" className={s.spinner} />
+      <h2 id="gateway-title">Connecting to secure payment gateway</h2>
+      <p id="gateway-description">
+        Please wait. You will be redirected to CCAvenue shortly.
+      </p>
+    </dialog>
+  );
+}
 
-  // ==================== CART MANAGEMENT ====================
-
+function AttemptStatus({ owner, reference, onResolved }) {
+  const [status, setStatus] = useState("");
+  const [revision, refresh] = useState(0);
   useEffect(() => {
-    let active = true;
-    setLoadingCart(true);
-    setCartItems([]);
-    loadCart(user?.id, supabase)
-      .then(items => { if (active) setCartItems(items); })
-      .catch(() => { if (active) showToast('Failed to load cart', 'error'); })
-      .finally(() => { if (active) setLoadingCart(false); });
-    return () => { active = false; };
-  }, [user?.id, showToast]);
-
-  // ==================== FORM HANDLING ====================
-
-  const handleChange = (e) => {
-    const { name, value } = e.target;
-    setFormData((prev) => ({ ...prev, [name]: value }));
-  };
-
-  const validateForm = () => {
-    const requiredFields = ['name', 'email', 'phone', 'street', 'city', 'state', 'pincode'];
-
-    // Check for empty fields
-    for (let field of requiredFields) {
-      if (!formData[field]?.trim()) {
-        showToast(`Please fill out the ${field.charAt(0).toUpperCase() + field.slice(1)} field.`, 'error');
-        return false;
-      }
-    }
-
-    // Email validation
-    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-    if (!emailRegex.test(formData.email.trim())) {
-      showToast('Please enter a valid email address.', 'error');
-      return false;
-    }
-
-    // Phone validation (10 digits)
-    const phoneRegex = /^[0-9]{10}$/;
-    if (!phoneRegex.test(formData.phone.trim())) {
-      showToast('Please enter a valid 10-digit phone number.', 'error');
-      return false;
-    }
-
-    // Pincode validation (6 digits)
-    const pincodeRegex = /^[0-9]{6}$/;
-    if (!pincodeRegex.test(formData.pincode.trim())) {
-      showToast('Please enter a valid 6-digit pincode.', 'error');
-      return false;
-    }
-
-    return true;
-  };
-
-  // ==================== CALCULATIONS ====================
-
-  const subtotal = cartItems.reduce((sum, item) => sum + (item.price * item.quantity), 0);
-  const shipping = 0; // Free shipping
-  const total = subtotal + shipping;
-
-  const formatCurrency = (amount) =>
-    new Intl.NumberFormat('en-IN', {
-      style: 'currency',
-      currency: 'INR',
-      minimumFractionDigits: 2,
-      maximumFractionDigits: 2
-    }).format(amount);
-
-  const handleSubmitForm = () => {
-    if (!validateForm() || !cartItems.length) return;
-    setFormSubmitted(true);
-  };
-  const placeOrder = async (method) => {
-    if (!formSubmitted || !validateForm() || !cartItems.length || submitting.current) return;
-    submitting.current = true;
-    setLoading(true);
-    try {
-      const owner = await ensureCheckoutUser();
-      await mergeGuestCart(owner.id, supabase);
-      const key = `gcmt-checkout:${owner.id}:${method}`;
-      const attemptId = sessionStorage.getItem(key) || crypto.randomUUID();
-      sessionStorage.setItem(key, attemptId);
-      const result = await authenticatedFetch('/api/create-order', {
-        method: 'POST',
-        signal: AbortSignal.timeout(20000),
-        body: JSON.stringify({
-          attemptId,
-          ...(method === 'cod' && {method}),
-          shipping: formData,
-          expectedPaise: Math.round(total * 100),
-          expectedLines: cartItems.map(item => ({
-            productId: String(item.productId), variant: item.variant || '',
-            quantity: item.quantity, unitPaise: Math.round(item.price * 100),
-          })),
-        }),
-      });
-      if (result.existing || result.cod) {
-        sessionStorage.removeItem(key);
-        navigate('/payment-success?payment_id=' + encodeURIComponent(result.paymentId));
-        return;
-      }
-      if (result.totalPaise !== Math.round(total * 100) ||
-          !Object.values(gatewayUrls).includes(result.gatewayUrl) ||
-          !result.encRequest || !result.accessCode) {
-        throw new Error('Unable to open payment. Check your order status.');
-      }
-      const form = document.createElement('form');
-      form.method = 'POST';
-      form.action = result.gatewayUrl;
-      form.hidden = true;
-      for (const [name, value] of Object.entries({encRequest:result.encRequest, access_code:result.accessCode})) {
-        const input = document.createElement('input');
-        input.type = 'hidden';
-        input.name = name;
-        input.value = value;
-        form.appendChild(input);
-      }
-      document.body.appendChild(form);
-      try { form.submit(); } finally { form.remove(); }
-      sessionStorage.removeItem(key);
-    } catch (error) {
-      setFormSubmitted(false);
+    let current = true;
+    async function check() {
       try {
-        const current = (await supabase.auth.getSession()).data.session?.user?.id;
-        setCartItems(await loadCart(current, supabase));
-      } catch {}
-      showToast(error.name === 'TimeoutError' ? 'Checkout timed out. Check your orders before trying again.' : error.message || 'Checkout could not be completed.', 'error');
-    } finally {
-      setLoading(false);
-      submitting.current = false;
+        const { data, error } = await supabase
+          .from("orders")
+          .select("payment_status")
+          .eq("user_id", owner)
+          .eq("payment_id", reference)
+          .maybeSingle();
+        if (current)
+          setStatus(
+            (!error && data?.payment_status?.toUpperCase()) || "UNKNOWN",
+          );
+      } catch {
+        if (current) setStatus("UNKNOWN");
+      }
     }
-  };
+    check();
+    return () => {
+      current = false;
+    };
+  }, [reference, owner, revision]);
 
-  // ==================== RENDER COMPONENTS ====================
-
-  const renderShippingForm = () => (
-    <div className="checkout-card">
-      <h2>Shipping Information</h2>
-      <div className="checkout-card-body">
-        {Object.keys(formData).map((field) => (
-          <div key={field} className="form-group">
-            <label htmlFor={`shipping-${field}`}>
-              {field.charAt(0).toUpperCase() +
-                field.slice(1).replace(/([A-Z])/g, ' $1')}
-              <span style={{ color: 'red' }}> *</span>
-            </label>
-            <input
-              type={
-                field === 'email'
-                  ? 'email'
-                  : field === 'phone'
-                  ? 'tel'
-                  : 'text'
-              }
-              id={`shipping-${field}`}
-              required
-              name={field}
-              value={formData[field]}
-              onChange={handleChange}
-              disabled={formSubmitted || loading}
-              className="form-input"
-              placeholder={
-                field === 'phone'
-                  ? '10-digit mobile number'
-                  : field === 'pincode'
-                  ? '6-digit postal code'
-                  : field === 'email'
-                  ? 'your@email.com'
-                  : field === 'name'
-                  ? 'Full Name'
-                  : field === 'street'
-                  ? 'House no, Street, Area'
-                  : ''
-              }
-              maxLength={
-                field === 'phone'
-                  ? '10'
-                  : field === 'pincode'
-                  ? '6'
-                  : undefined
-              }
-            />
-          </div>
-        ))}
-
-        {!formSubmitted && (
-          <button
-            onClick={handleSubmitForm}
-            disabled={loading || cartItems.length === 0}
-            className="btn btn-primary"
-          >
-            Continue to Payment
-          </button>
-        )}
-
-        {formSubmitted && (
-          <div className="success-message">
-            ✓ Contact information confirmed
-            <button
-              onClick={() => setFormSubmitted(false)}
-              className="btn-link"
-              style={{ marginLeft: '10px', fontSize: '14px' }}
-            >
-              Edit
-            </button>
-          </div>
-        )}
-      </div>
-    </div>
+  const paid = ["PAID", "SUCCESS", "COMPLETED"].includes(status);
+  const failed = ["FAILED", "CANCELLED", "CANCELED", "ABORTED"].includes(
+    status,
   );
-
-  const renderOrderSummary = () => (
-    <div className="checkout-card">
-      <h2>Order Summary</h2>
-      <div className="checkout-card-body">
-        {loadingCart ? (
-          <div className="loading-message">Loading cart…</div>
-        ) : cartItems.length ? (
-          <ul className="order-summary-list">
-            {cartItems.map((item, index) => (
-              <li key={item.id || index} className="order-summary-item">
-                <div className="order-item-details">
-                  {item.image && (
-                    <img
-                      src={item.image}
-                      alt={item.name}
-                      className="order-item-image"
-                      onError={(e) => {
-                        e.target.style.display = 'none';
-                      }}
-                    />
-                  )}
-                  <div className="order-item-info">
-                    <div className="item-name">{item.name}{item.variant && ` · ${item.variant}`}</div>
-                    <div className="item-quantity">Qty: {item.quantity}</div>
-                    <div className="item-unit-price">
-                      {formatCurrency(item.price)} each
-                    </div>
-                  </div>
-                </div>
-                <div className="item-total">
-                  {formatCurrency(item.price * item.quantity)}
-                </div>
-              </li>
-            ))}
-          </ul>
-        ) : (
-          <div className="empty-cart-message">
-            <p>No items in cart</p>
-            <button
-              onClick={() => navigate('/products')}
-              className="btn btn-outline"
-            >
-              Continue Shopping
-            </button>
-          </div>
-        )}
-
-        {cartItems.length > 0 && (
-          <>
-            <div className="summary-row">
-              <span>Subtotal ({cartItems.reduce((sum, item) => sum + item.quantity, 0)} items)</span>
-              <span>{formatCurrency(subtotal)}</span>
-            </div>
-            <div className="summary-row">
-              <span>Shipping</span>
-              <span className="free-shipping">Free</span>
-            </div>
-            <div className="summary-row summary-row-total">
-              <strong>Total Amount</strong>
-              <strong>{formatCurrency(total)}</strong>
-            </div>
-          </>
-        )}
-      </div>
-    </div>
-  );
-
-  const renderPaymentActions = () => {
-    if (cartItems.length === 0) {
-      return (
-        <div className="checkout-actions">
-          <button
-            onClick={() => navigate('/cart')}
-            className="btn btn-outline"
-          >
-            Return to Cart
-          </button>
-        </div>
-      );
-    }
-
-    return (
-      <div className="checkout-actions">
-        <button
-          onClick={() => navigate('/cart')}
-          className="btn btn-outline"
-          disabled={loading}
-        >
-          Return to Cart
-        </button>
-
-        {formSubmitted && (
-          <div className="payment-methods">
-            <button
-              onClick={() => placeOrder('online')}
-              disabled={loading}
-              className="btn btn-success payment-btn"
-            >
-              {loading ? (
-                <>
-                  <span className="spinner"></span>
-                  Processing...
-                </>
-              ) : (
-                `Pay ${formatCurrency(total)} Now`
-              )}
-            </button>
-            {import.meta.env.REACT_APP_COD_ENABLED === 'true' && (
-              <button className="btn btn-outline" disabled={loading} onClick={() => placeOrder('cod')}>
-                Place cash-on-delivery order
-              </button>
-            )}
-            <p className="payment-note">
-              🔒 Secure payment powered by CCAvenue
-            </p>
-          </div>
-        )}
-
-        {!formSubmitted && (
-          <div className="payment-info">
-            Please fill in your contact information to proceed with payment
-          </div>
-        )}
-      </div>
-    );
-  };
-
-  // ==================== MAIN RENDER ====================
+  let message = "Checking the status of your order…";
+  if (paid)
+    message = "Payment confirmed. You can find this purchase in Your orders.";
+  else if (failed)
+    message =
+      "This payment was unsuccessful. You can review your details and try again.";
+  else if (status === "PENDING")
+    message =
+      "Your payment is pending. Check again before making another payment.";
+  else if (status)
+    message =
+      "We couldn’t confirm your payment status. Check again or contact GCMT with your reference.";
 
   return (
-    <div className="checkout-container">
-      <div className="checkout-wrapper">
-        <div className="checkout-header">
-          <h1 className="checkout-title">Checkout</h1>
-          <div className="checkout-steps">
-            <span className="step active">1. Cart</span>
-            <span className={`step ${formSubmitted ? 'active' : ''}`}>2. Information</span>
-            <span className={`step ${loading ? 'active' : ''}`}>3. Payment</span>
-          </div>
-        </div>
-
-        {isMobile ? (
-          <div className="mobile-layout">
-            {renderOrderSummary()}
-            {renderShippingForm()}
-            {renderPaymentActions()}
-          </div>
+    <section className={s.card}>
+      <h2>Check your payment</h2>
+      <p role="status">{message}</p>
+      <p className={s.quiet}>Payment reference · {reference}</p>
+      <div className={s.actions}>
+        <Button to="/your-orders">Check your orders</Button>
+        {paid || failed ? (
+          <Button secondary onClick={onResolved}>
+            {paid ? "Start a separate order" : "Review and retry"}
+          </Button>
         ) : (
-          <div className="desktop-layout">
-            <div className="left-column">
-              {renderShippingForm()}
-              {renderPaymentActions()}
-            </div>
-            <div className="right-column">
-              {renderOrderSummary()}
+          <Button
+            secondary
+            disabled={!status}
+            onClick={() => {
+              setStatus("");
+              refresh((v) => v + 1);
+            }}
+          >
+            Refresh status
+          </Button>
+        )}
+        <Link to="/contact">Contact GCMT</Link>
+      </div>
+    </section>
+  );
+}
+
+function Review({ owner, id }) {
+  const [lines, setLines] = useState(null);
+  const [error, setError] = useState("");
+  const [operation, setOperation] = useState(null);
+  const processing = operation === "payment";
+  const busy = operation !== null;
+  const [revision, refresh] = useState(0);
+  const key = attemptKey(owner, id);
+  const [attempt, setAttempt] = useState(() => localStorage.getItem(key));
+  const [needsRefresh, setNeedsRefresh] = useState(false);
+  const lock = useRef(false);
+  const mounted = useRef(false);
+  const paymentRequest = useRef(null);
+  useEffect(() => {
+    mounted.current = true;
+    return () => {
+      mounted.current = false;
+      paymentRequest.current?.abort();
+    };
+  }, []);
+  useEffect(() => {
+    let current = true;
+    setNeedsRefresh(true);
+    reviewLines(owner, id)
+      .then((rows) => {
+        if (current) {
+          setLines(rows);
+          setNeedsRefresh(false);
+        }
+      })
+      .catch((e) => {
+        if (current) setError(e.message);
+      });
+    return () => {
+      current = false;
+    };
+  }, [owner, id, revision]);
+  useEffect(() => {
+    const update = () => {
+      setAttempt(localStorage.getItem(key));
+    };
+    const restore = (event) => {
+      if (!event.persisted) return;
+      if (paymentRequest.current) {
+        paymentRequest.current.abort();
+        paymentRequest.current = null;
+        lock.current = false;
+        setOperation(null);
+      }
+      update();
+    };
+    window.addEventListener("storage", update);
+    window.addEventListener("pageshow", restore);
+    return () => {
+      window.removeEventListener("storage", update);
+      window.removeEventListener("pageshow", restore);
+    };
+  }, [key]);
+
+  async function edit(line, next) {
+    if (lock.current || localStorage.getItem(key)) return;
+    lock.current = true;
+    setOperation("quantity");
+    setError("");
+    try {
+      if (id === null) await changeRow(owner, line, next);
+      else changeIntent(sessionStorage, owner, line, next);
+      const rows = await reviewLines(owner, id);
+      if (mounted.current) setLines(rows);
+    } catch (e) {
+      if (mounted.current) {
+        setError(e.message);
+        setNeedsRefresh(true);
+      }
+    } finally {
+      lock.current = false;
+      if (mounted.current) setOperation(null);
+    }
+  }
+
+  async function pay(e) {
+    e.preventDefault();
+    if (lock.current || needsRefresh || attempt) return;
+    const delivery = Object.fromEntries(
+      [...new FormData(e.currentTarget)].map(([k, v]) => [k, v.trim()]),
+    );
+    if (Object.values(delivery).some((v) => !v)) {
+      setError("Complete each delivery field.");
+      return;
+    }
+    lock.current = true;
+    setOperation("payment");
+    const request = new AbortController();
+    paymentRequest.current = request;
+    let recorded = false;
+    setError("");
+    try {
+      const handedOff = await navigator.locks.request(key, async () => {
+        if (request.signal.aborted) return;
+        const previous = localStorage.getItem(key);
+        if (previous) {
+          setAttempt(previous);
+          return;
+        }
+        const fresh = await reviewLines(owner, id);
+        if (request.signal.aborted) return;
+        if (
+          basketSignature(fresh) !== basketSignature(lines) ||
+          !total(fresh) ||
+          fresh.some((l) => Number(l.product?.product_discount) > 0)
+        ) {
+          setLines(fresh);
+          throw Error(
+            "Your order changed. Review the updated quantities and total before paying.",
+          );
+        }
+        const { data, error: sessionError } = await supabase.auth.getSession();
+        if (
+          !mounted.current ||
+          sessionError ||
+          data.session?.user?.id !== owner
+        )
+          throw Error(
+            "Your account changed. Reopen checkout in the correct account.",
+          );
+        if (request.signal.aborted) return;
+        const reference = crypto.randomUUID();
+        sessionStorage.setItem(lastAttemptKey(owner), reference);
+        localStorage.setItem(key, reference);
+        recorded = true;
+        setAttempt(reference);
+        await submitOrder(owner, fresh, delivery, reference, request.signal);
+        return !request.signal.aborted;
+      });
+      // Native form submission starts navigation. Keep checkout locked until it leaves.
+      if (handedOff) return;
+    } catch (err) {
+      if (mounted.current && !request.signal.aborted) {
+        setError(
+          recorded
+            ? "Payment initialization could not be confirmed. Check the order below."
+            : err.message,
+        );
+      }
+    }
+    if (mounted.current && paymentRequest.current === request) {
+      paymentRequest.current = null;
+      lock.current = false;
+      setOperation(null);
+    }
+  }
+  const recovery = attempt && !processing && (
+    <AttemptStatus
+      key={attempt}
+      reference={attempt}
+      owner={owner}
+      onResolved={() => {
+        if (localStorage.getItem(key) === attempt) localStorage.removeItem(key);
+        setAttempt(localStorage.getItem(key));
+        setError("");
+        setNeedsRefresh(true);
+        refresh((v) => v + 1);
+      }}
+    />
+  );
+  if (!lines?.length && recovery) return recovery;
+  function retry() {
+    setError("");
+    refresh((v) => v + 1);
+  }
+  if (!lines)
+    return error ? (
+      <Notice error>
+        {error}{" "}
+        <Button secondary onClick={retry}>
+          Retry review
+        </Button>{" "}
+        <Link to="/products">Shop products</Link>
+      </Notice>
+    ) : (
+      <LoadingSkeleton label="Checking current prices…" />
+    );
+  if (!lines.length)
+    return (
+      <div className={s.card}>
+        <h2>Your cart is empty</h2>
+        <Link to="/products">Shop products</Link>
+      </div>
+    );
+  const amount = total(lines);
+  const discounted = lines.some((l) => Number(l.product?.product_discount) > 0);
+  const blocked = discounted || !amount || !navigator.locks;
+  return (
+    <div className={s.checkout}>
+      <form id="delivery" className={s.card} onSubmit={pay}>
+        <h2>Contact &amp; delivery</h2>
+        <div className={s.deliveryFields}>
+          {fields.map(
+            ([name, label, autoComplete, type = "text", pattern, hint]) => (
+              <Field
+                key={name}
+                name={name}
+                label={label}
+                autoComplete={autoComplete}
+                required
+                type={type}
+                pattern={pattern}
+                inputMode={pattern ? "numeric" : undefined}
+                placeholder={hint}
+                readOnly={busy || !!attempt}
+              />
+            ),
+          )}
+        </div>
+        <h2>Payment method</h2>
+        <div className={s.actions}>
+          <CreditCard aria-hidden="true" size={20} /> Online payment via
+          CCAvenue
+        </div>
+      </form>
+      <aside className={s.card}>
+        <h2>{id === null ? "Order summary" : "Direct purchase"}</h2>
+        {lines.map((l) => (
+          <div key={l.rowId} className={s.row}>
+            {l.product && photos(l.product)[0] && (
+              <img src={photos(l.product)[0]} alt="" />
+            )}
+            <div className={s.grow}>
+              <strong>{l.product?.product_name || "Unavailable item"}</strong>
+              <p>
+                {l.size} · {money(l.unit)} each
+              </p>
+              <QuantitySelector
+                value={l.quantity}
+                max={quantityLimit(l.product)}
+                name={l.product?.product_name}
+                disabled={busy || !!attempt || needsRefresh}
+                onChange={(n) => edit(l, n)}
+              />
+              <p>
+                Line subtotal ·{" "}
+                <strong>
+                  {money(l.unit == null ? null : l.unit * l.quantity)}
+                </strong>
+              </p>
             </div>
           </div>
+        ))}
+        <div className={s.pair}>
+          Subtotal <span>{money(amount)}</span>
+        </div>
+        <div className={s.pair}>
+          Shipping <span>{money(0)}</span>
+        </div>
+        <div className={s.pair + " " + s.payable}>
+          Total payable <strong aria-live="polite">{money(amount)}</strong>
+        </div>
+        {blocked && (
+          <Notice>
+            {discounted
+              ? "Contact GCMT to confirm the discounted price before paying."
+              : !navigator.locks
+                ? "Open checkout in a browser that supports secure payment coordination."
+                : "Review unavailable items or quantities before paying."}
+          </Notice>
         )}
-      </div>
+        {error && (
+          <Notice error>
+            {error}{" "}
+            {needsRefresh && (
+              <Button secondary onClick={retry}>
+                Reload quantities
+              </Button>
+            )}
+          </Notice>
+        )}
+        {recovery}
+        <Button
+          form="delivery"
+          type="submit"
+          disabled={busy || !!attempt || needsRefresh || blocked}
+        >
+          {processing ? (
+            <>
+              <span className={s.spinner} aria-hidden="true" />
+              Processing payment…
+            </>
+          ) : (
+            `Pay ${money(amount)}`
+          )}
+        </Button>
+        <Link to={id === null ? "/cart" : "/product/" + lines[0].product.id}>
+          {id === null ? "Edit cart" : "Product details"}
+        </Link>
+      </aside>
+      {processing && <PaymentOverlay />}
     </div>
   );
 }

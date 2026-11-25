@@ -1,3 +1,4 @@
+@scope ([data-page="faq"]) {
 .faq-page {
   max-width: 900px;
   margin: 0 auto;
@@ -29,4 +30,6 @@
   font-size: 1rem;
   color: #555;
   line-height: 1.6;
+}
+
 }

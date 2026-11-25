@@ -1,0 +1,19 @@
+{
+  "checks": [
+    "Drawer navigation and independent native FAQ disclosures, including keyboard activation",
+    "Journal category search, no matches, restore all six entries",
+    "Product query, empty result, clear search and purchase controls restored",
+    "Registration mode, original name field and password visibility",
+    "Required fields, synthetic enquiry success and form reset",
+    "Footer subscription success and feedback with synthetic response",
+    "PDP sticky Buy Now appears after inline actions, sits on viewport bottom, hides for focused fields and footer, and stays absent on tablet"
+  ],
+  "accessibility": {
+    "/about": [],
+    "/contact": [],
+    "/faq": [],
+    "/blog": [],
+    "/tnc": [],
+    "/products": []
+  }
+}

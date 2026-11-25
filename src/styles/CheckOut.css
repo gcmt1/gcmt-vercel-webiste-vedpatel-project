@@ -1,7 +1,8 @@
+@scope ([data-page="checkout"]) {
 /* CheckOut.css - Professional E-commerce Checkout Styles */
 
 /* ==================== ROOT VARIABLES ==================== */
-:root {
+:scope {
   /* Colors */
   --primary-color: #2563eb;
   --primary-hover: #1d4ed8;
@@ -785,4 +786,5 @@
   .right-column {
     position: static !important;
   }
+}
 }

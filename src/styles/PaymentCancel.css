@@ -1,3 +1,4 @@
+@scope ([data-page="payment-cancel"]) {
 .payment-cancel-container {
   min-height: 80vh;
   display: flex;
@@ -65,4 +66,6 @@
 
 .btn-outline:hover {
   background-color: #f1f1f1;
+}
+
 }

@@ -1,0 +1,90 @@
+[
+  {
+    "role": "guest",
+    "mode": "Buy Now",
+    "quantities": [
+      1,
+      2,
+      3,
+      4,
+      3,
+      2,
+      1,
+      2,
+      3
+    ],
+    "order": {
+      "product_id": "90a4321f-582f-4463-a136-b1694466ed78",
+      "name": "GCMT Clean & Care Charcoal Toothpaste",
+      "size": "100g",
+      "quantity": 3,
+      "unit_price": 150,
+      "total_price": 450
+    },
+    "orderTotal": 450,
+    "gatewayAmount": "450.00",
+    "historyQuantity": 3,
+    "result": "SUCCESS",
+    "inserts": 1,
+    "gatewayRequests": 1,
+    "cartBefore": [
+      2,
+      7
+    ],
+    "cartAfter": [
+      2,
+      7
+    ]
+  },
+  {
+    "role": "customer",
+    "mode": "cart",
+    "quantities": [
+      1,
+      2,
+      3,
+      4,
+      3,
+      2,
+      1,
+      2,
+      3
+    ],
+    "order": {
+      "product_id": "90a4321f-582f-4463-a136-b1694466ed78",
+      "name": "GCMT Clean & Care Charcoal Toothpaste",
+      "size": "100g",
+      "quantity": 3,
+      "unit_price": 150,
+      "total_price": 450
+    },
+    "orderTotal": 450,
+    "gatewayAmount": "450.00",
+    "historyQuantity": 3,
+    "result": "CANCELLED",
+    "inserts": 1,
+    "gatewayRequests": 1,
+    "cartBefore": [
+      3
+    ],
+    "cartAfter": [
+      3
+    ]
+  },
+  {
+    "checks": [
+      "discounted catalog item remains reviewable with payment paused",
+      "rapid quantity clicks serialize one in-flight write; payment disabled until acknowledged; badge updates",
+      "listing Buy Now and required pack",
+      "detail selection carries three 200g packs",
+      "back navigation",
+      "price change requires new confirmation",
+      "unacknowledged gateway request stays pending after refresh",
+      "success URL cannot mark pending order paid",
+      "failed cart mutation blocks payment and preserves address",
+      "cross-tab stale cart re-quoted",
+      "staff access denied",
+      "direct intent rejected after account transition"
+    ]
+  }
+]

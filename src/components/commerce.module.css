@@ -1,0 +1,271 @@
+.stack {
+  display: grid;
+  gap: 18px;
+  min-width: 0;
+}
+.columns {
+  display: grid;
+  grid-template-columns: minmax(0, 1.45fr) minmax(240px, 0.8fr);
+  gap: 24px;
+  align-items: start;
+}
+.card {
+  padding: clamp(16px, 3vw, 30px);
+  background: white;
+  border: 1px solid var(--line);
+  border-radius: 12px;
+  display: grid;
+  gap: 16px;
+  min-width: 0;
+}
+.card h2 {
+  font-size: 1.35rem;
+}
+.row {
+  display: flex;
+  gap: 14px;
+  align-items: center;
+  flex-wrap: wrap;
+  padding: 12px 0;
+  border-bottom: 1px solid var(--line);
+  overflow-wrap: anywhere;
+}
+.row img {
+  width: 76px;
+  height: 72px;
+  object-fit: contain;
+  background: var(--mist);
+  border-radius: 6px;
+}
+.grow {
+  flex: 1;
+  min-width: 130px;
+}
+.quiet {
+  color: var(--muted);
+  font-size: 0.92rem;
+}
+.row button,
+.textBtn {
+  min-width: 44px;
+  min-height: 44px;
+  background: white;
+  color: var(--leaf);
+  border: 1px solid var(--line);
+  border-radius: 6px;
+  padding: 4px 10px;
+}
+.actions {
+  display: flex;
+  gap: 8px;
+  align-items: center;
+  flex-wrap: wrap;
+}
+.controls {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+.pair {
+  display: flex;
+  gap: 8px;
+  justify-content: space-between;
+  align-items: baseline;
+  overflow-wrap: anywhere;
+}
+.pair strong {
+  font-size: 1.25rem;
+}
+.badge {
+  display: inline-flex;
+  align-items: center;
+  min-height: 26px;
+  border-radius: 5px;
+  padding: 2px 8px;
+  color: var(--leaf);
+  background: var(--mist);
+  font-size: 0.88rem;
+}
+.form {
+  display: grid;
+  gap: 15px;
+}
+.item {
+  padding: 12px 0;
+  border-top: 1px solid var(--line);
+}
+.card ul {
+  padding-inline-start: 20px;
+}
+.card summary {
+  cursor: pointer;
+  min-height: 44px;
+}
+.card a {
+  overflow-wrap: anywhere;
+}
+.header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 10px;
+}
+@media (max-width: 700px) {
+  .columns {
+    grid-template-columns: 1fr;
+  }
+  .card {
+    gap: 12px;
+  }
+  .row {
+    gap: 8px;
+  }
+  .row img {
+    width: 60px;
+    height: 55px;
+  }
+}
+.stepper {
+  display: inline-flex;
+  align-items: center;
+  border: 1px solid var(--control);
+  border-radius: var(--radius);
+  background: var(--white);
+  width: fit-content;
+  overflow: hidden;
+}
+.stepper button {
+  width: 44px;
+  min-height: 44px;
+  padding: 0;
+  border: 0;
+  border-radius: 0;
+  background: transparent;
+  color: var(--leaf);
+  font-size: 1.2rem;
+}
+.stepper button:focus-visible {
+  outline-offset: -4px;
+}
+.stepper button:disabled {
+  color: var(--muted);
+  background: var(--mist);
+}
+.stepper output {
+  min-width: 2ch;
+  text-align: center;
+  font-weight: 650;
+  font-variant-numeric: tabular-nums;
+}
+.checkout {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(320px, 0.9fr);
+  gap: var(--space);
+  align-items: start;
+}
+.deliveryFields {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 16px;
+}
+.deliveryFields label:nth-child(-n + 4) {
+  grid-column: 1 / -1;
+}
+.checkout aside {
+  align-self: start;
+}
+.payable {
+  font-variant-numeric: tabular-nums;
+  color: var(--leaf);
+  border-top: 1px solid var(--line);
+  padding-top: 12px;
+}
+@media (max-width: 740px) {
+  .checkout {
+    grid-template-columns: minmax(0, 1fr);
+  }
+  .checkout aside {
+    grid-row: 1;
+  }
+}
+@media (max-width: 380px) {
+  .deliveryFields {
+    grid-template-columns: 1fr;
+  }
+}
+.badge[data-payment="Pending"],
+.badge[data-payment="Awaiting collection"] {
+  color: var(--warn);
+  background: #fff3d7;
+}
+.badge[data-payment="Failed"],
+.badge[data-payment="Cancelled"],
+.badge[data-payment="Needs review"] {
+  color: var(--danger);
+  background: #f9e9e9;
+}
+.paymentOverlay {
+  width: min(27rem, calc(100% - 2rem));
+  padding: clamp(22px, 4vw, 32px);
+  margin: auto;
+  color: var(--ink);
+  background: var(--white);
+  border: 1px solid var(--line);
+  border-radius: 12px;
+  text-align: center;
+}
+.paymentOverlay::backdrop {
+  background: rgba(16, 33, 24, 0.52);
+}
+.paymentOverlay h2 {
+  font-size: 1.35rem;
+  margin: 12px 0 8px;
+}
+.paymentOverlay p {
+  color: var(--muted);
+}
+.spinner {
+  display: inline-block;
+  width: 1em;
+  height: 1em;
+  border: 2px solid currentColor;
+  border-right-color: transparent;
+  border-radius: 50%;
+  animation: paymentSpin 0.85s linear infinite;
+}
+.paymentOverlay .spinner {
+  color: var(--leaf);
+  width: 2rem;
+  height: 2rem;
+  border-width: 3px;
+}
+@keyframes paymentSpin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+
+[data-page="cart"] .pair,
+[data-page="your-orders"] .pair {
+  font-variant-numeric: tabular-nums;
+}
+[data-page="cart"] .row > button {
+  color: var(--muted);
+  text-decoration: underline;
+  text-underline-offset: 0.18em;
+}
+[data-page="your-orders"] .card details,
+[data-page="profile"] .card details {
+  border-block: 1px solid var(--line);
+  padding-block: 4px;
+}
+[data-page="your-orders"] .card summary,
+[data-page="profile"] .card summary {
+  padding-block: 9px;
+}
+[data-page="auth"] .card {
+  max-width: 28rem;
+  margin-inline: auto;
+}

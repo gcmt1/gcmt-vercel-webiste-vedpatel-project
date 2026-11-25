@@ -1,46 +1,28 @@
-import React, { useState } from 'react';
-import { useNavigate } from 'react-router-dom';
+import React from 'react';
 import { useCart } from '../hooks/useCart';
-import { useToast } from './ToastContext';
-import '../styles/Cart.css';
+import { useToast } from '../components/ToastContext';
+import "../styles/Cart.css";
 
-export default function AddToCartButton({
-  productId, quantity = 1, variant = '', disabled = false, showBuyNow = false,
-}) {
-  const { addToCart } = useCart();
-  const { showToast } = useToast();
-  const navigate = useNavigate();
-  const [pending, setPending] = useState(null);
+export default function AddToCartButton({ productId, quantity = 1 }) {
+  const { addToCart, loading } = useCart();
+  const { showToast } = useToast(); // ✅ Import toast
 
-  const handleClick = async (action) => {
-    if (disabled || pending) return;
-    setPending(action);
-    const buyNow = action === 'buy';
-    try {
-      const added = await addToCart(productId, quantity, variant);
-      if (!added) throw new Error('Cart update failed');
-      if (buyNow) {
-        navigate('/checkout');
-      } else {
-        showToast('✅ Product added to cart!', 'success');
-      }
-    } catch {
-      showToast(buyNow ? 'Could not start checkout. Please try again.' : '❌ Failed to add to cart. Try again.', 'error');
-    } finally {
-      setPending(null);
+  const handleClick = async () => {
+    const success = await addToCart(productId, quantity);
+    if (success) {
+      showToast('✅ Product added to cart!', 'success');
+    } else {
+      showToast('❌ Failed to add to cart. Try again.', 'error');
     }
   };
 
   return (
-    <>
-      <button type="button" onClick={() => handleClick('cart')} disabled={disabled || !!pending} className="add-to-cart-btn">
-        {pending === 'cart' ? 'Adding...' : 'Add to Cart'}
-      </button>
-      {showBuyNow && (
-        <button type="button" data-action="buy-now" onClick={() => handleClick('buy')} disabled={disabled || !!pending}>
-          {pending === 'buy' ? 'Opening checkout...' : 'Buy Now'}
-        </button>
-      )}
-    </>
+    <button
+      onClick={handleClick}
+      disabled={loading}
+      className="add-to-cart-btn"
+    >
+      {loading ? 'Adding...' : 'Add to Cart'}
+    </button>
   );
 }

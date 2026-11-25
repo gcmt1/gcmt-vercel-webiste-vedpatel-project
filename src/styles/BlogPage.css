@@ -1,3 +1,4 @@
+@scope ([data-page="blog"]) {
 /* ========================================
    BLOG PAGE - PROFESSIONAL CSS
    Responsive, Accessible, Production-Ready
@@ -14,7 +15,7 @@
   padding: 0;
 }
 
-:root {
+:scope {
   /* Primary Colors */
   --primary-green: #199700;
   --primary-green-light: #25b900;
@@ -887,4 +888,5 @@ body {
     color: black;
     border-bottom: 2px solid var(--gray-300);
   }
+}
 }

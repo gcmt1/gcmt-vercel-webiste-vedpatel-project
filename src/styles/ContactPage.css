@@ -1,5 +1,6 @@
+@scope ([data-page="contact"]) {
 /* ContactPage.css */
-:root {
+:scope {
   --primary-color: #2c7a2c;
   --primary-hover: #1e5a1e;
   --text-color: #000000;
@@ -225,4 +226,6 @@ textarea {
   .contact-content {
     grid-template-columns: 1fr;
   }
+}
+
 }

@@ -1,6 +1,6 @@
 {
-  "short_name": "GCMT Shop",
-  "name": "GCMT Shop",
+  "short_name": "React App",
+  "name": "Create React App Sample",
   "icons": [
     {
       "src": "favicon.ico",

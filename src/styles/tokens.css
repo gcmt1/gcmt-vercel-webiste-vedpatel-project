@@ -1,0 +1,17 @@
+:root {
+  --leaf: #20563b;
+  --leaf-hover: #153f2a;
+  --ink: #17251d;
+  --muted: #4f6055;
+  --paper: #faf9f5;
+  --white: #fff;
+  --mist: #eff3ee;
+  --line: #d6ded7;
+  --control: #657a6d;
+  --focus: #005fcc;
+  --danger: #962b33;
+  --warn: #75440d;
+  --sans: Inter, system-ui, -apple-system, "Segoe UI", sans-serif;
+  --radius: 8px;
+  --space: clamp(16px, 3vw, 32px);
+}

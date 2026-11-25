@@ -1,3 +1,4 @@
+@scope ([data-page="product"]) {
 /* Professional Review System Styles */
 .rs-section {
   max-width: 1200px;
@@ -412,4 +413,5 @@
   --background: #ffffff;
   --surface: #f8fafc;
   --border: #e5e7eb;
+}
 }

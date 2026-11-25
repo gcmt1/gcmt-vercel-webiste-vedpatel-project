@@ -1,3 +1,4 @@
+@scope ([data-page="home"]) {
 /* GCMT Professional Homepage Styles */
 
 /* ===== BASE STYLES & RESET ===== */
@@ -1176,4 +1177,6 @@ body {
 
 .testimonial-slides {
   will-change: transform;
+}
+
 }

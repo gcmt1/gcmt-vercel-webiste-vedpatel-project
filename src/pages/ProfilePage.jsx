@@ -1,84 +1,57 @@
-import React from 'react';
-import { useAppContext } from '../AppContext';
-import { supabase, isGuestUser } from '../supabaseClient';
-import { useNavigate } from 'react-router-dom';
-import '../styles/ProfilePage.css';
-
-const ProfilePage = () => {
-  const { user, loading } = useAppContext();
-  const isGuest = isGuestUser(user);
-  const navigate = useNavigate();
-
-  const handleLogout = async () => {
-    await supabase.auth.signOut();
-    navigate('/');
-  };
-
-  if (loading) {
-    return <div className="profile-page">Loading your profile...</div>;
+import React, { useState } from "react";
+import { supabase } from "../supabaseClient";
+import { useAppContext } from "../AppContext";
+import { guestUser, displayDate } from "../shop/orders";
+import { Page, Button, Notice } from "../components/ui";
+import s from "../components/commerce.module.css";
+export default function Profile() {
+  const { user, startingGuest } = useAppContext(),
+    [error, setError] = useState("");
+  const guest = guestUser(user);
+  async function logout() {
+    const r = await supabase.auth.signOut();
+    if (r.error) setError("Could not sign out. Please try again.");
   }
-
-  if (!user) {
-    return (
-      <div className="profile-page">
-        <div className="profile-card">
-          <h2>Welcome to Our Store!</h2>
-          <p>Please log in or create an account to access your profile and orders.</p>
-          <div className="profile-actions">
-            <button
-              className="profile-btn"
-              onClick={() => navigate('/auth')}
-            >
-              Login / Register
-            </button>
-          </div>
-        </div>
-      </div>
-    );
-  }
-
   return (
-    <div className="profile-page">
-      <div className="profile-card">
-        <h2>My Account</h2>
-        <div className="profile-info">
-          <div className="profile-item">
-            <span className="profile-label">Email:</span>
-            <span>{user.email}</span>
-          </div>
-          <div className="profile-item">
-            <span className="profile-label">User ID:</span>
-            <span>{user.id}</span>
-          </div>
-          <div className="profile-item">
-            <span className="profile-label">Member Since:</span>
-            <span>{new Date(user.created_at).toLocaleDateString()}</span>
-          </div>
-        </div>
-
-        {isGuest ? (
-          <div className="profile-actions">
-            <p className="guest-message">You are currently using a guest account.</p>
-            <button
-              className="profile-btn"
-              onClick={() => navigate('/auth')}
-            >
-              Register / Login
-            </button>
-          </div>
+    <Page narrow>
+      <div className={s.card}>
+        <h1>Your account</h1>
+        {startingGuest ? (
+          <Notice>Restoring session…</Notice>
         ) : (
-          <div className="profile-actions">
-            <button
-              className="profile-btn logout-btn"
-              onClick={handleLogout}
-            >
-              Logout
-            </button>
-          </div>
+          <>
+            <h2>
+              {guest ? "Guest session" : user?.email || "Welcome to GCMT"}
+            </h2>
+            {user && (
+              <details>
+                <summary>Account details</summary>
+                <p>Account ID · {user.id}</p>
+                <p>Member since {displayDate(user.created_at)}</p>
+              </details>
+            )}
+            {guest && (
+              <p>
+                Your orders are linked to this browser session. Switching
+                accounts changes the order history you can see.
+              </p>
+            )}
+            <div className={s.actions}>
+              <Button to="/your-orders">Your orders</Button>
+              {!user || guest ? (
+                <Button secondary to="/auth">
+                  Sign in or register
+                </Button>
+              ) : (
+                <Button secondary onClick={logout}>
+                  Sign out
+                </Button>
+              )}
+            </div>
+          </>
         )}
+        {error && <Notice error>{error}</Notice>}
       </div>
-    </div>
+    </Page>
   );
-};
-
-export default ProfilePage;
+}

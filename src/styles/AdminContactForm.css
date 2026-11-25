@@ -1,3 +1,4 @@
+@scope ([data-page="admin-contactform"]) {
 /* AdminContactForm.css - Professional E-commerce Admin Dashboard */
 
 /* Reset and Base Styles */
@@ -582,4 +583,5 @@
     pointer-events: none;
     opacity: 0.8;
   }
+}
 }

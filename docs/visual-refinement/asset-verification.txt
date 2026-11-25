@@ -1,0 +1,19 @@
+public/404.html: OK
+public/CNAME: OK
+public/GCMT-logo.png: OK
+public/favicon.ico: OK
+public/index.html: OK
+public/logo192.png: OK
+public/logo512.png: OK
+public/manifest.json: OK
+public/robots.txt: OK
+public/sitemap.xml: OK
+src/assets/ARYA PATEL GCMT.jpg: OK
+src/assets/GCMT-logo.png: OK
+src/assets/Product1.jpg: OK
+src/assets/Product2.png: OK
+src/assets/marketing-video.mp4: OK
+src/assets/model.png: OK
+src/assets/product.jpg: OK
+src/assets/product.png: OK
+src/logo.svg: OK

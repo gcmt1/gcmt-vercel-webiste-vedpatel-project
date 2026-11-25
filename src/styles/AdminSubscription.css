@@ -1,3 +1,4 @@
+@scope ([data-page="admin-subscription"]) {
 /* ============================================
    Admin Subscription Management Styles
    Scoped with 'admin-subscription-' prefix
@@ -1085,4 +1086,5 @@
     --as-text-tertiary: #64748b;
     --as-border: #334155;
   }
+}
 }

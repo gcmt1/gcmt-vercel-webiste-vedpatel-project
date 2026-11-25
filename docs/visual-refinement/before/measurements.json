@@ -1,0 +1,2459 @@
+{
+ "home": {
+  "route": "/",
+  "sizes": [
+   {
+    "w": 1440,
+    "h": 900,
+    "overflow": 0,
+    "actions": [
+     {
+      "label": "Buy Now",
+      "top": 511,
+      "bottom": 560,
+      "height": 48,
+      "enabled": true
+     },
+     {
+      "label": "Add to Cart",
+      "top": 511,
+      "bottom": 560,
+      "height": 48,
+      "enabled": true
+     }
+    ],
+    "description": [
+     true
+    ],
+    "missingImages": 0
+   },
+   {
+    "w": 1024,
+    "h": 768,
+    "overflow": 0,
+    "actions": [
+     {
+      "label": "Buy Now",
+      "top": 457,
+      "bottom": 506,
+      "height": 48,
+      "enabled": true
+     },
+     {
+      "label": "Add to Cart",
+      "top": 457,
+      "bottom": 506,
+      "height": 48,
+      "enabled": true
+     }
+    ],
+    "description": [
+     true
+    ],
+    "missingImages": 0
+   },
+   {
+    "w": 768,
+    "h": 1024,
+    "overflow": 0,
+    "actions": [
+     {
+      "label": "Buy Now",
+      "top": 466,
+      "bottom": 515,
+      "height": 48,
+      "enabled": true
+     },
+     {
+      "label": "Add to Cart",
+      "top": 460,
+      "bottom": 522,
+      "height": 62,
+      "enabled": true
+     }
+    ],
+    "description": [
+     true
+    ],
+    "missingImages": 0
+   },
+   {
+    "w": 430,
+    "h": 932,
+    "overflow": 0,
+    "actions": [
+     {
+      "label": "Buy Now",
+      "top": 725,
+      "bottom": 773,
+      "height": 48,
+      "enabled": true
+     },
+     {
+      "label": "Add to Cart",
+      "top": 725,
+      "bottom": 773,
+      "height": 48,
+      "enabled": true
+     }
+    ],
+    "description": [
+     true
+    ],
+    "missingImages": 0
+   },
+   {
+    "w": 390,
+    "h": 844,
+    "overflow": 0,
+    "actions": [
+     {
+      "label": "Buy Now",
+      "top": 699,
+      "bottom": 748,
+      "height": 48,
+      "enabled": true
+     },
+     {
+      "label": "Add to Cart",
+      "top": 699,
+      "bottom": 748,
+      "height": 48,
+      "enabled": true
+     }
+    ],
+    "description": [
+     true
+    ],
+    "missingImages": 0
+   },
+   {
+    "w": 360,
+    "h": 800,
+    "overflow": 0,
+    "actions": [
+     {
+      "label": "Buy Now",
+      "top": 688,
+      "bottom": 736,
+      "height": 48,
+      "enabled": true
+     },
+     {
+      "label": "Add to Cart",
+      "top": 688,
+      "bottom": 736,
+      "height": 48,
+      "enabled": true
+     }
+    ],
+    "description": [
+     true
+    ],
+    "missingImages": 0
+   },
+   {
+    "w": 320,
+    "h": 640,
+    "overflow": 0,
+    "actions": [
+     {
+      "label": "Buy Now",
+      "top": 460,
+      "bottom": 508,
+      "height": 48,
+      "enabled": true
+     },
+     {
+      "label": "Add to Cart",
+      "top": 453,
+      "bottom": 515,
+      "height": 62,
+      "enabled": true
+     }
+    ],
+    "description": [
+     true
+    ],
+    "missingImages": 0
+   }
+  ]
+ },
+ "shop": {
+  "route": "/products",
+  "sizes": [
+   {
+    "w": 1440,
+    "h": 900,
+    "overflow": 0,
+    "actions": [
+     {
+      "label": "Buy Now",
+      "top": 524,
+      "bottom": 571,
+      "height": 46,
+      "enabled": true
+     },
+     {
+      "label": "Add to Cart",
+      "top": 524,
+      "bottom": 571,
+      "height": 46,
+      "enabled": true
+     }
+    ],
+    "description": [
+     true
+    ],
+    "missingImages": 0
+   },
+   {
+    "w": 1024,
+    "h": 768,
+    "overflow": 0,
+    "actions": [
+     {
+      "label": "Buy Now",
+      "top": 489,
+      "bottom": 536,
+      "height": 46,
+      "enabled": true
+     },
+     {
+      "label": "Add to Cart",
+      "top": 489,
+      "bottom": 536,
+      "height": 46,
+      "enabled": true
+     }
+    ],
+    "description": [
+     true
+    ],
+    "missingImages": 0
+   },
+   {
+    "w": 768,
+    "h": 1024,
+    "overflow": 0,
+    "actions": [
+     {
+      "label": "Buy Now",
+      "top": 460,
+      "bottom": 506,
+      "height": 46,
+      "enabled": true
+     },
+     {
+      "label": "Add to Cart",
+      "top": 460,
+      "bottom": 506,
+      "height": 46,
+      "enabled": true
+     }
+    ],
+    "description": [
+     true
+    ],
+    "missingImages": 0
+   },
+   {
+    "w": 430,
+    "h": 932,
+    "overflow": 0,
+    "actions": [
+     {
+      "label": "Buy Now",
+      "top": 609,
+      "bottom": 655,
+      "height": 46,
+      "enabled": true
+     },
+     {
+      "label": "Add to Cart",
+      "top": 609,
+      "bottom": 655,
+      "height": 46,
+      "enabled": true
+     }
+    ],
+    "description": [
+     true
+    ],
+    "missingImages": 0
+   },
+   {
+    "w": 390,
+    "h": 844,
+    "overflow": 0,
+    "actions": [
+     {
+      "label": "Buy Now",
+      "top": 657,
+      "bottom": 703,
+      "height": 46,
+      "enabled": true
+     },
+     {
+      "label": "Add to Cart",
+      "top": 657,
+      "bottom": 703,
+      "height": 46,
+      "enabled": true
+     }
+    ],
+    "description": [
+     true
+    ],
+    "missingImages": 0
+   },
+   {
+    "w": 360,
+    "h": 800,
+    "overflow": 0,
+    "actions": [
+     {
+      "label": "Buy Now",
+      "top": 657,
+      "bottom": 703,
+      "height": 46,
+      "enabled": true
+     },
+     {
+      "label": "Add to Cart",
+      "top": 657,
+      "bottom": 703,
+      "height": 46,
+      "enabled": true
+     }
+    ],
+    "description": [
+     true
+    ],
+    "missingImages": 0
+   },
+   {
+    "w": 320,
+    "h": 640,
+    "overflow": 0,
+    "actions": [
+     {
+      "label": "Buy Now",
+      "top": 579,
+      "bottom": 625,
+      "height": 46,
+      "enabled": true
+     },
+     {
+      "label": "Add to Cart",
+      "top": 579,
+      "bottom": 625,
+      "height": 46,
+      "enabled": true
+     }
+    ],
+    "description": [
+     false
+    ],
+    "missingImages": 0
+   }
+  ]
+ },
+ "product": {
+  "route": "/product/90a4321f-582f-4463-a136-b1694466ed78",
+  "sizes": [
+   {
+    "w": 1440,
+    "h": 900,
+    "overflow": 0,
+    "actions": [
+     {
+      "label": "Buy Now",
+      "top": 533,
+      "bottom": 581,
+      "height": 48,
+      "enabled": true
+     },
+     {
+      "label": "Add to Cart",
+      "top": 533,
+      "bottom": 581,
+      "height": 48,
+      "enabled": true
+     }
+    ],
+    "description": [
+     true
+    ],
+    "missingImages": 0
+   },
+   {
+    "w": 1024,
+    "h": 768,
+    "overflow": 0,
+    "actions": [
+     {
+      "label": "Buy Now",
+      "top": 479,
+      "bottom": 527,
+      "height": 48,
+      "enabled": true
+     },
+     {
+      "label": "Add to Cart",
+      "top": 479,
+      "bottom": 527,
+      "height": 48,
+      "enabled": true
+     }
+    ],
+    "description": [
+     true
+    ],
+    "missingImages": 0
+   },
+   {
+    "w": 768,
+    "h": 1024,
+    "overflow": 0,
+    "actions": [
+     {
+      "label": "Buy Now",
+      "top": 488,
+      "bottom": 537,
+      "height": 48,
+      "enabled": true
+     },
+     {
+      "label": "Add to Cart",
+      "top": 481,
+      "bottom": 544,
+      "height": 62,
+      "enabled": true
+     }
+    ],
+    "description": [
+     true
+    ],
+    "missingImages": 0
+   },
+   {
+    "w": 430,
+    "h": 932,
+    "overflow": 0,
+    "actions": [
+     {
+      "label": "Buy Now",
+      "top": 746,
+      "bottom": 795,
+      "height": 48,
+      "enabled": true
+     },
+     {
+      "label": "Add to Cart",
+      "top": 746,
+      "bottom": 795,
+      "height": 48,
+      "enabled": true
+     }
+    ],
+    "description": [
+     true
+    ],
+    "missingImages": 0
+   },
+   {
+    "w": 390,
+    "h": 844,
+    "overflow": 0,
+    "actions": [
+     {
+      "label": "Buy Now",
+      "top": 721,
+      "bottom": 770,
+      "height": 48,
+      "enabled": true
+     },
+     {
+      "label": "Add to Cart",
+      "top": 721,
+      "bottom": 770,
+      "height": 48,
+      "enabled": true
+     }
+    ],
+    "description": [
+     true
+    ],
+    "missingImages": 0
+   },
+   {
+    "w": 360,
+    "h": 800,
+    "overflow": 0,
+    "actions": [
+     {
+      "label": "Buy Now",
+      "top": 710,
+      "bottom": 758,
+      "height": 48,
+      "enabled": true
+     },
+     {
+      "label": "Add to Cart",
+      "top": 710,
+      "bottom": 758,
+      "height": 48,
+      "enabled": true
+     }
+    ],
+    "description": [
+     true
+    ],
+    "missingImages": 0
+   },
+   {
+    "w": 320,
+    "h": 640,
+    "overflow": 0,
+    "actions": [
+     {
+      "label": "Buy Now",
+      "top": 496,
+      "bottom": 544,
+      "height": 48,
+      "enabled": true
+     },
+     {
+      "label": "Add to Cart",
+      "top": 489,
+      "bottom": 551,
+      "height": 62,
+      "enabled": true
+     }
+    ],
+    "description": [
+     true
+    ],
+    "missingImages": 0
+   }
+  ]
+ },
+ "cart": {
+  "route": "/cart",
+  "sizes": [
+   {
+    "w": 1440,
+    "h": 900,
+    "overflow": 0,
+    "actions": [
+     {
+      "label": "Proceed to checkout",
+      "top": 325,
+      "bottom": 372,
+      "height": 46,
+      "enabled": true
+     }
+    ],
+    "description": [],
+    "missingImages": 0
+   },
+   {
+    "w": 1024,
+    "h": 768,
+    "overflow": 0,
+    "actions": [
+     {
+      "label": "Proceed to checkout",
+      "top": 302,
+      "bottom": 348,
+      "height": 46,
+      "enabled": true
+     }
+    ],
+    "description": [],
+    "missingImages": 0
+   },
+   {
+    "w": 768,
+    "h": 1024,
+    "overflow": 0,
+    "actions": [
+     {
+      "label": "Proceed to checkout",
+      "top": 273,
+      "bottom": 319,
+      "height": 46,
+      "enabled": true
+     }
+    ],
+    "description": [],
+    "missingImages": 0
+   },
+   {
+    "w": 430,
+    "h": 932,
+    "overflow": 0,
+    "actions": [
+     {
+      "label": "Proceed to checkout",
+      "top": 450,
+      "bottom": 497,
+      "height": 46,
+      "enabled": true
+     }
+    ],
+    "description": [],
+    "missingImages": 0
+   },
+   {
+    "w": 390,
+    "h": 844,
+    "overflow": 0,
+    "actions": [
+     {
+      "label": "Proceed to checkout",
+      "top": 450,
+      "bottom": 497,
+      "height": 46,
+      "enabled": true
+     }
+    ],
+    "description": [],
+    "missingImages": 0
+   },
+   {
+    "w": 360,
+    "h": 800,
+    "overflow": 0,
+    "actions": [
+     {
+      "label": "Proceed to checkout",
+      "top": 500,
+      "bottom": 546,
+      "height": 46,
+      "enabled": true
+     }
+    ],
+    "description": [],
+    "missingImages": 0
+   },
+   {
+    "w": 320,
+    "h": 640,
+    "overflow": 0,
+    "actions": [
+     {
+      "label": "Proceed to checkout",
+      "top": 502,
+      "bottom": 549,
+      "height": 46,
+      "enabled": true
+     }
+    ],
+    "description": [],
+    "missingImages": 0
+   }
+  ]
+ },
+ "checkout": {
+  "route": "/checkout",
+  "sizes": [
+   {
+    "w": 1440,
+    "h": 900,
+    "overflow": 0,
+    "actions": [
+     {
+      "label": "Pay ₹300",
+      "top": 581,
+      "bottom": 627,
+      "height": 46,
+      "enabled": true
+     }
+    ],
+    "description": [],
+    "missingImages": 0
+   },
+   {
+    "w": 1024,
+    "h": 768,
+    "overflow": 0,
+    "actions": [
+     {
+      "label": "Pay ₹300",
+      "top": 583,
+      "bottom": 629,
+      "height": 46,
+      "enabled": true
+     }
+    ],
+    "description": [],
+    "missingImages": 0
+   },
+   {
+    "w": 768,
+    "h": 1024,
+    "overflow": 0,
+    "actions": [
+     {
+      "label": "Pay ₹300",
+      "top": 554,
+      "bottom": 600,
+      "height": 46,
+      "enabled": true
+     }
+    ],
+    "description": [],
+    "missingImages": 0
+   },
+   {
+    "w": 430,
+    "h": 932,
+    "overflow": 0,
+    "actions": [
+     {
+      "label": "Pay ₹300",
+      "top": 491,
+      "bottom": 537,
+      "height": 46,
+      "enabled": true
+     }
+    ],
+    "description": [],
+    "missingImages": 0
+   },
+   {
+    "w": 390,
+    "h": 844,
+    "overflow": 0,
+    "actions": [
+     {
+      "label": "Pay ₹300",
+      "top": 491,
+      "bottom": 537,
+      "height": 46,
+      "enabled": true
+     }
+    ],
+    "description": [],
+    "missingImages": 0
+   },
+   {
+    "w": 360,
+    "h": 800,
+    "overflow": 0,
+    "actions": [
+     {
+      "label": "Pay ₹300",
+      "top": 491,
+      "bottom": 537,
+      "height": 46,
+      "enabled": true
+     }
+    ],
+    "description": [],
+    "missingImages": 0
+   },
+   {
+    "w": 320,
+    "h": 640,
+    "overflow": 0,
+    "actions": [
+     {
+      "label": "Pay ₹300",
+      "top": 491,
+      "bottom": 537,
+      "height": 46,
+      "enabled": true
+     }
+    ],
+    "description": [],
+    "missingImages": 0
+   }
+  ]
+ },
+ "orders": {
+  "route": "/your-orders",
+  "sizes": [
+   {
+    "w": 1440,
+    "h": 900,
+    "overflow": 0,
+    "actions": [],
+    "description": [],
+    "missingImages": 0
+   },
+   {
+    "w": 1024,
+    "h": 768,
+    "overflow": 0,
+    "actions": [],
+    "description": [],
+    "missingImages": 0
+   },
+   {
+    "w": 768,
+    "h": 1024,
+    "overflow": 0,
+    "actions": [],
+    "description": [],
+    "missingImages": 0
+   },
+   {
+    "w": 430,
+    "h": 932,
+    "overflow": 0,
+    "actions": [],
+    "description": [],
+    "missingImages": 0
+   },
+   {
+    "w": 390,
+    "h": 844,
+    "overflow": 0,
+    "actions": [],
+    "description": [],
+    "missingImages": 0
+   },
+   {
+    "w": 360,
+    "h": 800,
+    "overflow": 0,
+    "actions": [],
+    "description": [],
+    "missingImages": 0
+   },
+   {
+    "w": 320,
+    "h": 640,
+    "overflow": 0,
+    "actions": [],
+    "description": [],
+    "missingImages": 0
+   }
+  ]
+ },
+ "returned": {
+  "route": "/payment-success",
+  "sizes": [
+   {
+    "w": 1440,
+    "h": 900,
+    "overflow": 0,
+    "actions": [],
+    "description": [],
+    "missingImages": 0
+   },
+   {
+    "w": 1024,
+    "h": 768,
+    "overflow": 0,
+    "actions": [],
+    "description": [],
+    "missingImages": 0
+   },
+   {
+    "w": 768,
+    "h": 1024,
+    "overflow": 0,
+    "actions": [],
+    "description": [],
+    "missingImages": 0
+   },
+   {
+    "w": 430,
+    "h": 932,
+    "overflow": 0,
+    "actions": [],
+    "description": [],
+    "missingImages": 0
+   },
+   {
+    "w": 390,
+    "h": 844,
+    "overflow": 0,
+    "actions": [],
+    "description": [],
+    "missingImages": 0
+   },
+   {
+    "w": 360,
+    "h": 800,
+    "overflow": 0,
+    "actions": [],
+    "description": [],
+    "missingImages": 0
+   },
+   {
+    "w": 320,
+    "h": 640,
+    "overflow": 0,
+    "actions": [],
+    "description": [],
+    "missingImages": 0
+   }
+  ]
+ },
+ "cancel": {
+  "route": "/payment-cancel",
+  "sizes": [
+   {
+    "w": 1440,
+    "h": 900,
+    "overflow": 0,
+    "actions": [],
+    "description": [],
+    "missingImages": 0
+   },
+   {
+    "w": 1024,
+    "h": 768,
+    "overflow": 0,
+    "actions": [],
+    "description": [],
+    "missingImages": 0
+   },
+   {
+    "w": 768,
+    "h": 1024,
+    "overflow": 0,
+    "actions": [],
+    "description": [],
+    "missingImages": 0
+   },
+   {
+    "w": 430,
+    "h": 932,
+    "overflow": 0,
+    "actions": [],
+    "description": [],
+    "missingImages": 0
+   },
+   {
+    "w": 390,
+    "h": 844,
+    "overflow": 0,
+    "actions": [],
+    "description": [],
+    "missingImages": 0
+   },
+   {
+    "w": 360,
+    "h": 800,
+    "overflow": 0,
+    "actions": [],
+    "description": [],
+    "missingImages": 0
+   },
+   {
+    "w": 320,
+    "h": 640,
+    "overflow": 0,
+    "actions": [],
+    "description": [],
+    "missingImages": 0
+   }
+  ]
+ },
+ "account": {
+  "route": "/profile",
+  "sizes": [
+   {
+    "w": 1440,
+    "h": 900,
+    "overflow": 0,
+    "actions": [],
+    "description": [],
+    "missingImages": 0
+   },
+   {
+    "w": 1024,
+    "h": 768,
+    "overflow": 0,
+    "actions": [],
+    "description": [],
+    "missingImages": 0
+   },
+   {
+    "w": 768,
+    "h": 1024,
+    "overflow": 0,
+    "actions": [],
+    "description": [],
+    "missingImages": 0
+   },
+   {
+    "w": 430,
+    "h": 932,
+    "overflow": 0,
+    "actions": [],
+    "description": [],
+    "missingImages": 0
+   },
+   {
+    "w": 390,
+    "h": 844,
+    "overflow": 0,
+    "actions": [],
+    "description": [],
+    "missingImages": 0
+   },
+   {
+    "w": 360,
+    "h": 800,
+    "overflow": 0,
+    "actions": [],
+    "description": [],
+    "missingImages": 0
+   },
+   {
+    "w": 320,
+    "h": 640,
+    "overflow": 0,
+    "actions": [],
+    "description": [],
+    "missingImages": 0
+   }
+  ]
+ },
+ "auth": {
+  "route": "/auth",
+  "sizes": [
+   {
+    "w": 1440,
+    "h": 900,
+    "overflow": 0,
+    "actions": [],
+    "description": [],
+    "missingImages": 0
+   },
+   {
+    "w": 1024,
+    "h": 768,
+    "overflow": 0,
+    "actions": [],
+    "description": [],
+    "missingImages": 0
+   },
+   {
+    "w": 768,
+    "h": 1024,
+    "overflow": 0,
+    "actions": [],
+    "description": [],
+    "missingImages": 0
+   },
+   {
+    "w": 430,
+    "h": 932,
+    "overflow": 0,
+    "actions": [],
+    "description": [],
+    "missingImages": 0
+   },
+   {
+    "w": 390,
+    "h": 844,
+    "overflow": 0,
+    "actions": [],
+    "description": [],
+    "missingImages": 0
+   },
+   {
+    "w": 360,
+    "h": 800,
+    "overflow": 0,
+    "actions": [],
+    "description": [],
+    "missingImages": 0
+   },
+   {
+    "w": 320,
+    "h": 640,
+    "overflow": 0,
+    "actions": [],
+    "description": [],
+    "missingImages": 0
+   }
+  ]
+ },
+ "about": {
+  "route": "/about",
+  "sizes": [
+   {
+    "w": 1440,
+    "h": 900,
+    "overflow": 0,
+    "actions": [],
+    "description": [],
+    "missingImages": 0
+   },
+   {
+    "w": 1024,
+    "h": 768,
+    "overflow": 0,
+    "actions": [],
+    "description": [],
+    "missingImages": 0
+   },
+   {
+    "w": 768,
+    "h": 1024,
+    "overflow": 0,
+    "actions": [],
+    "description": [],
+    "missingImages": 0
+   },
+   {
+    "w": 430,
+    "h": 932,
+    "overflow": 0,
+    "actions": [],
+    "description": [],
+    "missingImages": 0
+   },
+   {
+    "w": 390,
+    "h": 844,
+    "overflow": 0,
+    "actions": [],
+    "description": [],
+    "missingImages": 0
+   },
+   {
+    "w": 360,
+    "h": 800,
+    "overflow": 0,
+    "actions": [],
+    "description": [],
+    "missingImages": 0
+   },
+   {
+    "w": 320,
+    "h": 640,
+    "overflow": 0,
+    "actions": [],
+    "description": [],
+    "missingImages": 0
+   }
+  ]
+ },
+ "help": {
+  "route": "/faq",
+  "sizes": [
+   {
+    "w": 1440,
+    "h": 900,
+    "overflow": 0,
+    "actions": [],
+    "description": [],
+    "missingImages": 0
+   },
+   {
+    "w": 1024,
+    "h": 768,
+    "overflow": 0,
+    "actions": [],
+    "description": [],
+    "missingImages": 0
+   },
+   {
+    "w": 768,
+    "h": 1024,
+    "overflow": 0,
+    "actions": [],
+    "description": [],
+    "missingImages": 0
+   },
+   {
+    "w": 430,
+    "h": 932,
+    "overflow": 0,
+    "actions": [],
+    "description": [],
+    "missingImages": 0
+   },
+   {
+    "w": 390,
+    "h": 844,
+    "overflow": 0,
+    "actions": [],
+    "description": [],
+    "missingImages": 0
+   },
+   {
+    "w": 360,
+    "h": 800,
+    "overflow": 0,
+    "actions": [],
+    "description": [],
+    "missingImages": 0
+   },
+   {
+    "w": 320,
+    "h": 640,
+    "overflow": 0,
+    "actions": [],
+    "description": [],
+    "missingImages": 0
+   }
+  ]
+ },
+ "contact": {
+  "route": "/contact",
+  "sizes": [
+   {
+    "w": 1440,
+    "h": 900,
+    "overflow": 0,
+    "actions": [],
+    "description": [],
+    "missingImages": 0
+   },
+   {
+    "w": 1024,
+    "h": 768,
+    "overflow": 0,
+    "actions": [],
+    "description": [],
+    "missingImages": 0
+   },
+   {
+    "w": 768,
+    "h": 1024,
+    "overflow": 0,
+    "actions": [],
+    "description": [],
+    "missingImages": 0
+   },
+   {
+    "w": 430,
+    "h": 932,
+    "overflow": 0,
+    "actions": [],
+    "description": [],
+    "missingImages": 0
+   },
+   {
+    "w": 390,
+    "h": 844,
+    "overflow": 0,
+    "actions": [],
+    "description": [],
+    "missingImages": 0
+   },
+   {
+    "w": 360,
+    "h": 800,
+    "overflow": 0,
+    "actions": [],
+    "description": [],
+    "missingImages": 0
+   },
+   {
+    "w": 320,
+    "h": 640,
+    "overflow": 0,
+    "actions": [],
+    "description": [],
+    "missingImages": 0
+   }
+  ]
+ },
+ "journal": {
+  "route": "/blog",
+  "sizes": [
+   {
+    "w": 1440,
+    "h": 900,
+    "overflow": 0,
+    "actions": [],
+    "description": [],
+    "missingImages": 0
+   },
+   {
+    "w": 1024,
+    "h": 768,
+    "overflow": 0,
+    "actions": [],
+    "description": [],
+    "missingImages": 0
+   },
+   {
+    "w": 768,
+    "h": 1024,
+    "overflow": 0,
+    "actions": [],
+    "description": [],
+    "missingImages": 0
+   },
+   {
+    "w": 430,
+    "h": 932,
+    "overflow": 0,
+    "actions": [],
+    "description": [],
+    "missingImages": 0
+   },
+   {
+    "w": 390,
+    "h": 844,
+    "overflow": 0,
+    "actions": [],
+    "description": [],
+    "missingImages": 0
+   },
+   {
+    "w": 360,
+    "h": 800,
+    "overflow": 0,
+    "actions": [],
+    "description": [],
+    "missingImages": 0
+   },
+   {
+    "w": 320,
+    "h": 640,
+    "overflow": 0,
+    "actions": [],
+    "description": [],
+    "missingImages": 0
+   }
+  ]
+ },
+ "policy": {
+  "route": "/tnc",
+  "sizes": [
+   {
+    "w": 1440,
+    "h": 900,
+    "overflow": 0,
+    "actions": [],
+    "description": [],
+    "missingImages": 0
+   },
+   {
+    "w": 1024,
+    "h": 768,
+    "overflow": 0,
+    "actions": [],
+    "description": [],
+    "missingImages": 0
+   },
+   {
+    "w": 768,
+    "h": 1024,
+    "overflow": 0,
+    "actions": [],
+    "description": [],
+    "missingImages": 0
+   },
+   {
+    "w": 430,
+    "h": 932,
+    "overflow": 0,
+    "actions": [],
+    "description": [],
+    "missingImages": 0
+   },
+   {
+    "w": 390,
+    "h": 844,
+    "overflow": 0,
+    "actions": [],
+    "description": [],
+    "missingImages": 0
+   },
+   {
+    "w": 360,
+    "h": 800,
+    "overflow": 0,
+    "actions": [],
+    "description": [],
+    "missingImages": 0
+   },
+   {
+    "w": 320,
+    "h": 640,
+    "overflow": 0,
+    "actions": [],
+    "description": [],
+    "missingImages": 0
+   }
+  ]
+ },
+ "operations": {
+  "route": "/admin-landing",
+  "sizes": [
+   {
+    "w": 1440,
+    "h": 900,
+    "overflow": 0,
+    "actions": [],
+    "description": [],
+    "missingImages": 0
+   },
+   {
+    "w": 1024,
+    "h": 768,
+    "overflow": 0,
+    "actions": [],
+    "description": [],
+    "missingImages": 0
+   },
+   {
+    "w": 768,
+    "h": 1024,
+    "overflow": 0,
+    "actions": [],
+    "description": [],
+    "missingImages": 0
+   },
+   {
+    "w": 430,
+    "h": 932,
+    "overflow": 0,
+    "actions": [],
+    "description": [],
+    "missingImages": 0
+   },
+   {
+    "w": 390,
+    "h": 844,
+    "overflow": 0,
+    "actions": [],
+    "description": [],
+    "missingImages": 0
+   },
+   {
+    "w": 360,
+    "h": 800,
+    "overflow": 0,
+    "actions": [],
+    "description": [],
+    "missingImages": 0
+   },
+   {
+    "w": 320,
+    "h": 640,
+    "overflow": 0,
+    "actions": [],
+    "description": [],
+    "missingImages": 0
+   }
+  ]
+ },
+ "fulfillment": {
+  "route": "/admin-order",
+  "sizes": [
+   {
+    "w": 1440,
+    "h": 900,
+    "overflow": 0,
+    "actions": [],
+    "description": [],
+    "missingImages": 0
+   },
+   {
+    "w": 1024,
+    "h": 768,
+    "overflow": 0,
+    "actions": [],
+    "description": [],
+    "missingImages": 0
+   },
+   {
+    "w": 768,
+    "h": 1024,
+    "overflow": 0,
+    "actions": [],
+    "description": [],
+    "missingImages": 0
+   },
+   {
+    "w": 430,
+    "h": 932,
+    "overflow": 0,
+    "actions": [],
+    "description": [],
+    "missingImages": 0
+   },
+   {
+    "w": 390,
+    "h": 844,
+    "overflow": 0,
+    "actions": [],
+    "description": [],
+    "missingImages": 0
+   },
+   {
+    "w": 360,
+    "h": 800,
+    "overflow": 0,
+    "actions": [],
+    "description": [],
+    "missingImages": 0
+   },
+   {
+    "w": 320,
+    "h": 640,
+    "overflow": 0,
+    "actions": [],
+    "description": [],
+    "missingImages": 0
+   }
+  ]
+ },
+ "catalog": {
+  "route": "/admin-product-manager",
+  "sizes": [
+   {
+    "w": 1440,
+    "h": 900,
+    "overflow": 0,
+    "actions": [],
+    "description": [],
+    "missingImages": 0
+   },
+   {
+    "w": 1024,
+    "h": 768,
+    "overflow": 0,
+    "actions": [],
+    "description": [],
+    "missingImages": 0
+   },
+   {
+    "w": 768,
+    "h": 1024,
+    "overflow": 0,
+    "actions": [],
+    "description": [],
+    "missingImages": 0
+   },
+   {
+    "w": 430,
+    "h": 932,
+    "overflow": 0,
+    "actions": [],
+    "description": [],
+    "missingImages": 0
+   },
+   {
+    "w": 390,
+    "h": 844,
+    "overflow": 0,
+    "actions": [],
+    "description": [],
+    "missingImages": 0
+   },
+   {
+    "w": 360,
+    "h": 800,
+    "overflow": 0,
+    "actions": [],
+    "description": [],
+    "missingImages": 0
+   },
+   {
+    "w": 320,
+    "h": 640,
+    "overflow": 0,
+    "actions": [],
+    "description": [],
+    "missingImages": 0
+   }
+  ]
+ },
+ "subscribers": {
+  "route": "/admin-subscription",
+  "sizes": [
+   {
+    "w": 1440,
+    "h": 900,
+    "overflow": 0,
+    "actions": [],
+    "description": [],
+    "missingImages": 0
+   },
+   {
+    "w": 1024,
+    "h": 768,
+    "overflow": 0,
+    "actions": [],
+    "description": [],
+    "missingImages": 0
+   },
+   {
+    "w": 768,
+    "h": 1024,
+    "overflow": 0,
+    "actions": [],
+    "description": [],
+    "missingImages": 0
+   },
+   {
+    "w": 430,
+    "h": 932,
+    "overflow": 0,
+    "actions": [],
+    "description": [],
+    "missingImages": 0
+   },
+   {
+    "w": 390,
+    "h": 844,
+    "overflow": 0,
+    "actions": [],
+    "description": [],
+    "missingImages": 0
+   },
+   {
+    "w": 360,
+    "h": 800,
+    "overflow": 0,
+    "actions": [],
+    "description": [],
+    "missingImages": 0
+   },
+   {
+    "w": 320,
+    "h": 640,
+    "overflow": 0,
+    "actions": [],
+    "description": [],
+    "missingImages": 0
+   }
+  ]
+ },
+ "enquiries": {
+  "route": "/admin-contactform",
+  "sizes": [
+   {
+    "w": 1440,
+    "h": 900,
+    "overflow": 0,
+    "actions": [],
+    "description": [],
+    "missingImages": 0
+   },
+   {
+    "w": 1024,
+    "h": 768,
+    "overflow": 0,
+    "actions": [],
+    "description": [],
+    "missingImages": 0
+   },
+   {
+    "w": 768,
+    "h": 1024,
+    "overflow": 0,
+    "actions": [],
+    "description": [],
+    "missingImages": 0
+   },
+   {
+    "w": 430,
+    "h": 932,
+    "overflow": 0,
+    "actions": [],
+    "description": [],
+    "missingImages": 0
+   },
+   {
+    "w": 390,
+    "h": 844,
+    "overflow": 0,
+    "actions": [],
+    "description": [],
+    "missingImages": 0
+   },
+   {
+    "w": 360,
+    "h": 800,
+    "overflow": 0,
+    "actions": [],
+    "description": [],
+    "missingImages": 0
+   },
+   {
+    "w": 320,
+    "h": 640,
+    "overflow": 0,
+    "actions": [],
+    "description": [],
+    "missingImages": 0
+   }
+  ]
+ },
+ "multishop": {
+  "route": "/products",
+  "sizes": [
+   {
+    "w": 1440,
+    "h": 900,
+    "overflow": 0,
+    "actions": [
+     {
+      "label": "Buy Now",
+      "top": 906,
+      "bottom": 952,
+      "height": 46,
+      "enabled": true
+     },
+     {
+      "label": "Add to Cart",
+      "top": 906,
+      "bottom": 952,
+      "height": 46,
+      "enabled": true
+     },
+     {
+      "label": "Buy Now",
+      "top": 906,
+      "bottom": 952,
+      "height": 46,
+      "enabled": true
+     },
+     {
+      "label": "Add to Cart",
+      "top": 906,
+      "bottom": 952,
+      "height": 46,
+      "enabled": true
+     }
+    ],
+    "description": [
+     true,
+     true
+    ],
+    "missingImages": 0
+   },
+   {
+    "w": 1024,
+    "h": 768,
+    "overflow": 0,
+    "actions": [
+     {
+      "label": "Buy Now",
+      "top": 817,
+      "bottom": 864,
+      "height": 46,
+      "enabled": true
+     },
+     {
+      "label": "Add to Cart",
+      "top": 817,
+      "bottom": 864,
+      "height": 46,
+      "enabled": true
+     },
+     {
+      "label": "Buy Now",
+      "top": 817,
+      "bottom": 864,
+      "height": 46,
+      "enabled": true
+     },
+     {
+      "label": "Add to Cart",
+      "top": 817,
+      "bottom": 864,
+      "height": 46,
+      "enabled": true
+     }
+    ],
+    "description": [
+     true,
+     true
+    ],
+    "missingImages": 0
+   },
+   {
+    "w": 768,
+    "h": 1024,
+    "overflow": 0,
+    "actions": [
+     {
+      "label": "Buy Now",
+      "top": 830,
+      "bottom": 877,
+      "height": 46,
+      "enabled": true
+     },
+     {
+      "label": "Add to Cart",
+      "top": 830,
+      "bottom": 877,
+      "height": 46,
+      "enabled": true
+     },
+     {
+      "label": "Buy Now",
+      "top": 830,
+      "bottom": 877,
+      "height": 46,
+      "enabled": true
+     },
+     {
+      "label": "Add to Cart",
+      "top": 830,
+      "bottom": 877,
+      "height": 46,
+      "enabled": true
+     }
+    ],
+    "description": [
+     true,
+     true
+    ],
+    "missingImages": 0
+   },
+   {
+    "w": 430,
+    "h": 932,
+    "overflow": 0,
+    "actions": [
+     {
+      "label": "Buy Now",
+      "top": 685,
+      "bottom": 731,
+      "height": 46,
+      "enabled": true
+     },
+     {
+      "label": "Add to Cart",
+      "top": 685,
+      "bottom": 731,
+      "height": 46,
+      "enabled": true
+     },
+     {
+      "label": "Buy Now",
+      "top": 1220,
+      "bottom": 1266,
+      "height": 46,
+      "enabled": true
+     },
+     {
+      "label": "Add to Cart",
+      "top": 1220,
+      "bottom": 1266,
+      "height": 46,
+      "enabled": true
+     }
+    ],
+    "description": [
+     true,
+     true
+    ],
+    "missingImages": 0
+   },
+   {
+    "w": 390,
+    "h": 844,
+    "overflow": 0,
+    "actions": [
+     {
+      "label": "Buy Now",
+      "top": 758,
+      "bottom": 804,
+      "height": 46,
+      "enabled": true
+     },
+     {
+      "label": "Add to Cart",
+      "top": 758,
+      "bottom": 804,
+      "height": 46,
+      "enabled": true
+     },
+     {
+      "label": "Buy Now",
+      "top": 1342,
+      "bottom": 1388,
+      "height": 46,
+      "enabled": true
+     },
+     {
+      "label": "Add to Cart",
+      "top": 1342,
+      "bottom": 1388,
+      "height": 46,
+      "enabled": true
+     }
+    ],
+    "description": [
+     true,
+     true
+    ],
+    "missingImages": 0
+   },
+   {
+    "w": 360,
+    "h": 800,
+    "overflow": 0,
+    "actions": [
+     {
+      "label": "Buy Now",
+      "top": 758,
+      "bottom": 804,
+      "height": 46,
+      "enabled": true
+     },
+     {
+      "label": "Add to Cart",
+      "top": 758,
+      "bottom": 804,
+      "height": 46,
+      "enabled": true
+     },
+     {
+      "label": "Buy Now",
+      "top": 1342,
+      "bottom": 1388,
+      "height": 46,
+      "enabled": true
+     },
+     {
+      "label": "Add to Cart",
+      "top": 1342,
+      "bottom": 1388,
+      "height": 46,
+      "enabled": true
+     }
+    ],
+    "description": [
+     true,
+     true
+    ],
+    "missingImages": 0
+   },
+   {
+    "w": 320,
+    "h": 640,
+    "overflow": 0,
+    "actions": [
+     {
+      "label": "Buy Now",
+      "top": 680,
+      "bottom": 727,
+      "height": 46,
+      "enabled": true
+     },
+     {
+      "label": "Add to Cart",
+      "top": 680,
+      "bottom": 727,
+      "height": 46,
+      "enabled": true
+     },
+     {
+      "label": "Buy Now",
+      "top": 1186,
+      "bottom": 1232,
+      "height": 46,
+      "enabled": true
+     },
+     {
+      "label": "Add to Cart",
+      "top": 1186,
+      "bottom": 1232,
+      "height": 46,
+      "enabled": true
+     }
+    ],
+    "description": [
+     false,
+     false
+    ],
+    "missingImages": 0
+   }
+  ]
+ },
+ "direct": {
+  "route": "/checkout?buy=visual",
+  "sizes": [
+   {
+    "w": 1440,
+    "h": 900,
+    "overflow": 0,
+    "actions": [
+     {
+      "label": "Pay ₹150",
+      "top": 581,
+      "bottom": 627,
+      "height": 46,
+      "enabled": true
+     }
+    ],
+    "description": [],
+    "missingImages": 0
+   },
+   {
+    "w": 1024,
+    "h": 768,
+    "overflow": 0,
+    "actions": [
+     {
+      "label": "Pay ₹150",
+      "top": 583,
+      "bottom": 629,
+      "height": 46,
+      "enabled": true
+     }
+    ],
+    "description": [],
+    "missingImages": 0
+   },
+   {
+    "w": 768,
+    "h": 1024,
+    "overflow": 0,
+    "actions": [
+     {
+      "label": "Pay ₹150",
+      "top": 554,
+      "bottom": 600,
+      "height": 46,
+      "enabled": true
+     }
+    ],
+    "description": [],
+    "missingImages": 0
+   },
+   {
+    "w": 430,
+    "h": 932,
+    "overflow": 0,
+    "actions": [
+     {
+      "label": "Pay ₹150",
+      "top": 491,
+      "bottom": 537,
+      "height": 46,
+      "enabled": true
+     }
+    ],
+    "description": [],
+    "missingImages": 0
+   },
+   {
+    "w": 390,
+    "h": 844,
+    "overflow": 0,
+    "actions": [
+     {
+      "label": "Pay ₹150",
+      "top": 491,
+      "bottom": 537,
+      "height": 46,
+      "enabled": true
+     }
+    ],
+    "description": [],
+    "missingImages": 0
+   },
+   {
+    "w": 360,
+    "h": 800,
+    "overflow": 0,
+    "actions": [
+     {
+      "label": "Pay ₹150",
+      "top": 491,
+      "bottom": 537,
+      "height": 46,
+      "enabled": true
+     }
+    ],
+    "description": [],
+    "missingImages": 0
+   },
+   {
+    "w": 320,
+    "h": 640,
+    "overflow": 0,
+    "actions": [
+     {
+      "label": "Pay ₹150",
+      "top": 491,
+      "bottom": 537,
+      "height": 46,
+      "enabled": true
+     }
+    ],
+    "description": [],
+    "missingImages": 0
+   }
+  ]
+ },
+ "terms": {
+  "route": "/terms-and-conditions",
+  "sizes": [
+   {
+    "w": 1440,
+    "h": 900,
+    "overflow": 0,
+    "actions": [],
+    "description": [],
+    "missingImages": 0
+   },
+   {
+    "w": 1024,
+    "h": 768,
+    "overflow": 0,
+    "actions": [],
+    "description": [],
+    "missingImages": 0
+   },
+   {
+    "w": 768,
+    "h": 1024,
+    "overflow": 0,
+    "actions": [],
+    "description": [],
+    "missingImages": 0
+   },
+   {
+    "w": 430,
+    "h": 932,
+    "overflow": 0,
+    "actions": [],
+    "description": [],
+    "missingImages": 0
+   },
+   {
+    "w": 390,
+    "h": 844,
+    "overflow": 0,
+    "actions": [],
+    "description": [],
+    "missingImages": 0
+   },
+   {
+    "w": 360,
+    "h": 800,
+    "overflow": 0,
+    "actions": [],
+    "description": [],
+    "missingImages": 0
+   },
+   {
+    "w": 320,
+    "h": 640,
+    "overflow": 0,
+    "actions": [],
+    "description": [],
+    "missingImages": 0
+   }
+  ]
+ },
+ "login": {
+  "route": "/login",
+  "sizes": [
+   {
+    "w": 1440,
+    "h": 900,
+    "overflow": 0,
+    "actions": [],
+    "description": [],
+    "missingImages": 0
+   },
+   {
+    "w": 1024,
+    "h": 768,
+    "overflow": 0,
+    "actions": [],
+    "description": [],
+    "missingImages": 0
+   },
+   {
+    "w": 768,
+    "h": 1024,
+    "overflow": 0,
+    "actions": [],
+    "description": [],
+    "missingImages": 0
+   },
+   {
+    "w": 430,
+    "h": 932,
+    "overflow": 0,
+    "actions": [],
+    "description": [],
+    "missingImages": 0
+   },
+   {
+    "w": 390,
+    "h": 844,
+    "overflow": 0,
+    "actions": [],
+    "description": [],
+    "missingImages": 0
+   },
+   {
+    "w": 360,
+    "h": 800,
+    "overflow": 0,
+    "actions": [],
+    "description": [],
+    "missingImages": 0
+   },
+   {
+    "w": 320,
+    "h": 640,
+    "overflow": 0,
+    "actions": [],
+    "description": [],
+    "missingImages": 0
+   }
+  ]
+ },
+ "failure": {
+  "route": "/payment-failure",
+  "sizes": [
+   {
+    "w": 1440,
+    "h": 900,
+    "overflow": 0,
+    "actions": [],
+    "description": [],
+    "missingImages": 0
+   },
+   {
+    "w": 1024,
+    "h": 768,
+    "overflow": 0,
+    "actions": [],
+    "description": [],
+    "missingImages": 0
+   },
+   {
+    "w": 768,
+    "h": 1024,
+    "overflow": 0,
+    "actions": [],
+    "description": [],
+    "missingImages": 0
+   },
+   {
+    "w": 430,
+    "h": 932,
+    "overflow": 0,
+    "actions": [],
+    "description": [],
+    "missingImages": 0
+   },
+   {
+    "w": 390,
+    "h": 844,
+    "overflow": 0,
+    "actions": [],
+    "description": [],
+    "missingImages": 0
+   },
+   {
+    "w": 360,
+    "h": 800,
+    "overflow": 0,
+    "actions": [],
+    "description": [],
+    "missingImages": 0
+   },
+   {
+    "w": 320,
+    "h": 640,
+    "overflow": 0,
+    "actions": [],
+    "description": [],
+    "missingImages": 0
+   }
+  ]
+ },
+ "pending": {
+  "route": "/payment-pending",
+  "sizes": [
+   {
+    "w": 1440,
+    "h": 900,
+    "overflow": 0,
+    "actions": [],
+    "description": [],
+    "missingImages": 0
+   },
+   {
+    "w": 1024,
+    "h": 768,
+    "overflow": 0,
+    "actions": [],
+    "description": [],
+    "missingImages": 0
+   },
+   {
+    "w": 768,
+    "h": 1024,
+    "overflow": 0,
+    "actions": [],
+    "description": [],
+    "missingImages": 0
+   },
+   {
+    "w": 430,
+    "h": 932,
+    "overflow": 0,
+    "actions": [],
+    "description": [],
+    "missingImages": 0
+   },
+   {
+    "w": 390,
+    "h": 844,
+    "overflow": 0,
+    "actions": [],
+    "description": [],
+    "missingImages": 0
+   },
+   {
+    "w": 360,
+    "h": 800,
+    "overflow": 0,
+    "actions": [],
+    "description": [],
+    "missingImages": 0
+   },
+   {
+    "w": 320,
+    "h": 640,
+    "overflow": 0,
+    "actions": [],
+    "description": [],
+    "missingImages": 0
+   }
+  ]
+ },
+ "missing": {
+  "route": "/missing-page",
+  "sizes": [
+   {
+    "w": 1440,
+    "h": 900,
+    "overflow": 0,
+    "actions": [],
+    "description": [],
+    "missingImages": 0
+   },
+   {
+    "w": 1024,
+    "h": 768,
+    "overflow": 0,
+    "actions": [],
+    "description": [],
+    "missingImages": 0
+   },
+   {
+    "w": 768,
+    "h": 1024,
+    "overflow": 0,
+    "actions": [],
+    "description": [],
+    "missingImages": 0
+   },
+   {
+    "w": 430,
+    "h": 932,
+    "overflow": 0,
+    "actions": [],
+    "description": [],
+    "missingImages": 0
+   },
+   {
+    "w": 390,
+    "h": 844,
+    "overflow": 0,
+    "actions": [],
+    "description": [],
+    "missingImages": 0
+   },
+   {
+    "w": 360,
+    "h": 800,
+    "overflow": 0,
+    "actions": [],
+    "description": [],
+    "missingImages": 0
+   },
+   {
+    "w": 320,
+    "h": 640,
+    "overflow": 0,
+    "actions": [],
+    "description": [],
+    "missingImages": 0
+   }
+  ]
+ },
+ "hash": {
+  "route": "/#/payment-success",
+  "sizes": [
+   {
+    "w": 1440,
+    "h": 900,
+    "overflow": 0,
+    "actions": [],
+    "description": [],
+    "missingImages": 0
+   },
+   {
+    "w": 1024,
+    "h": 768,
+    "overflow": 0,
+    "actions": [],
+    "description": [],
+    "missingImages": 0
+   },
+   {
+    "w": 768,
+    "h": 1024,
+    "overflow": 0,
+    "actions": [],
+    "description": [],
+    "missingImages": 0
+   },
+   {
+    "w": 430,
+    "h": 932,
+    "overflow": 0,
+    "actions": [],
+    "description": [],
+    "missingImages": 0
+   },
+   {
+    "w": 390,
+    "h": 844,
+    "overflow": 0,
+    "actions": [],
+    "description": [],
+    "missingImages": 0
+   },
+   {
+    "w": 360,
+    "h": 800,
+    "overflow": 0,
+    "actions": [],
+    "description": [],
+    "missingImages": 0
+   },
+   {
+    "w": 320,
+    "h": 640,
+    "overflow": 0,
+    "actions": [],
+    "description": [],
+    "missingImages": 0
+   }
+  ]
+ }
+}

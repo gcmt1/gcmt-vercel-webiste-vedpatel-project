@@ -1,0 +1,10 @@
+[
+  "Add to populated cart and reconcile two legacy lists individually to a reviewed total, with no repeated increment",
+  "Owner-scoped cart deletion clears only the selected fixture row",
+  "Hash payment return resolves to current history and downloads the owned historical invoice",
+  "Rejected contact submission retains entered message",
+  "Staff order search and confirmed historical COD collection with previous-status check",
+  "Confirmed fulfillment update changes the selected order and preserves its recorded payment status",
+  "Product copy edit preserves every other field including original photo references and price",
+  "Filtered subscriber CSV, cancelled deletion and confirmed scoped deletion"
+]

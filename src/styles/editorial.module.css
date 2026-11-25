@@ -1,0 +1,193 @@
+.aboutSpread,
+.contact,
+.help {
+  display: grid;
+  align-items: start;
+  column-gap: clamp(32px, 6vw, 88px);
+}
+.aboutSpread {
+  grid-template-columns: minmax(0, 1.2fr) minmax(0, 0.8fr);
+  grid-template-areas: "intro portrait" "story portrait";
+  row-gap: clamp(24px, 4vw, 54px);
+  align-content: center;
+  align-items: center;
+}
+.introduction {
+  grid-area: intro;
+  align-self: end;
+}
+.introduction p,
+.story p {
+  max-width: 53ch;
+  margin-top: 12px;
+}
+.introduction p {
+  font-size: clamp(1.05rem, 1.6vw, 1.32rem);
+}
+.portrait {
+  grid-area: portrait;
+  justify-self: center;
+  max-width: 100%;
+}
+.portrait img {
+  display: block;
+  width: auto;
+  height: auto;
+  max-height: clamp(240px, 26vw, 360px);
+  margin-inline: auto;
+  object-fit: contain;
+}
+.portrait figcaption {
+  margin-top: 8px;
+  color: var(--muted);
+  font-size: 0.9rem;
+}
+.story {
+  grid-area: story;
+  align-self: start;
+}
+.story h2,
+.values h2,
+.enquiry h2,
+.entry h2,
+.policy h2 {
+  font-family: Georgia, serif;
+  font-weight: 500;
+  letter-spacing: -0.025em;
+}
+.values {
+  display: grid;
+  grid-template-columns: minmax(0, 0.8fr) minmax(0, 1.2fr);
+  align-items: baseline;
+  gap: 12px 32px;
+  margin-top: clamp(24px, 4vw, 48px);
+  padding: clamp(20px, 3vw, 36px);
+  background: #214f3b;
+  color: white;
+}
+.values p { max-width: 56ch; }
+.aboutActions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+  margin-top: 20px;
+}
+.contact {
+  grid-template-columns: minmax(0, 2fr) minmax(0, 3fr);
+}
+.contactDetails {
+  display: grid;
+  gap: 16px;
+}
+.contactDetails > p:first-of-type {
+  max-width: 28ch;
+  font: 500 clamp(1.25rem, 2vw, 1.7rem)/1.35 Georgia, serif;
+}
+.contactLinks {
+  display: grid;
+  justify-items: start;
+  border-top: 1px solid var(--line);
+  padding-top: 8px;
+}
+.contactLinks a,
+.questions > a {
+  display: inline-flex;
+  align-items: center;
+  min-height: 44px;
+  overflow-wrap: anywhere;
+}
+.enquiry {
+  display: grid;
+  gap: 16px;
+  background: var(--mist);
+  border-top: 2px solid var(--leaf);
+  padding: clamp(18px, 3vw, 36px);
+}
+.enquiry button { justify-self: start; }
+.help {
+  grid-template-columns: minmax(0, 1fr) minmax(0, 1.6fr);
+}
+.questions details,
+.entry,
+.policy section {
+  border-top: 1px solid var(--line);
+}
+.questions details:first-child,
+.entry:first-of-type,
+.policy section:first-of-type {
+  border-top: 2px solid var(--leaf);
+}
+.questions summary {
+  padding: 16px 0;
+  cursor: pointer;
+  font-size: clamp(1.03rem, 1.45vw, 1.22rem);
+  font-weight: 620;
+  line-height: 1.45;
+}
+.questions summary::marker { color: var(--leaf); }
+.questions details p {
+  margin: -4px 0 20px 1.25em;
+  max-width: 62ch;
+}
+.questions > a { margin-top: 8px; }
+.questions details:last-of-type { border-bottom: 1px solid var(--line); }
+.journal { max-width: 1020px; margin-inline: auto; }
+.journalHead {
+  display: flex;
+  align-items: end;
+  justify-content: space-between;
+  gap: 18px;
+  margin-bottom: 24px;
+}
+.journalHead label { width: min(100%, 22rem); }
+.entry {
+  display: grid;
+  grid-template-columns: minmax(155px, 0.7fr) minmax(0, 2fr);
+  gap: 10px clamp(20px, 4vw, 56px);
+  padding-block: clamp(20px, 3vw, 34px);
+}
+.meta {
+  grid-row: span 2;
+  color: var(--muted);
+  font-size: 0.9rem;
+}
+.entry h2 { font-size: clamp(1.35rem, 2.5vw, 2rem); }
+.entry:first-of-type h2 { font-size: clamp(1.55rem, 3vw, 2.3rem); }
+.entry p:last-child { max-width: 65ch; }
+.policy { max-width: 68ch; margin: auto; }
+.policy section { margin-top: 32px; padding-top: 22px; }
+.policy h2 { margin-bottom: 14px; }
+.policy h3 {
+  margin: 22px 0 4px;
+  font-size: 1rem;
+  line-height: 1.45;
+  letter-spacing: 0;
+}
+.policy p,
+.policy li { line-height: 1.65; }
+.policy ul { margin: 8px 0; padding-inline-start: 1.3rem; }
+.policy > div:last-child {
+  margin-top: 28px;
+  color: var(--muted);
+  font-size: 0.9rem;
+}
+@media (max-width: 800px) {
+  .help { grid-template-columns: 1fr; row-gap: 20px; }
+}
+@media (max-width: 700px) {
+  .aboutSpread,
+  .contact,
+  .values,
+  .entry { grid-template-columns: minmax(0, 1fr); }
+  .aboutSpread {
+    grid-template-areas: "intro" "portrait" "story";
+    row-gap: 22px;
+  }
+  .portrait { justify-self: center; }
+  .portrait img { max-height: 225px; }
+  .contact { row-gap: 22px; }
+  .contactDetails { gap: 10px; }
+  .journalHead { flex-direction: column; align-items: stretch; }
+  .journalHead label { width: 100%; }
+  .meta { grid-row: auto; }
+}

@@ -1,0 +1,61 @@
+{
+  "factor": 2,
+  "initialWidth": 1280,
+  "observations": [
+    {
+      "name": "home",
+      "title": "GCMT Clean & Care Charcoal Toothpaste",
+      "page": "/",
+      "reducedMotion": false,
+      "width": 640,
+      "documentWidth": 640,
+      "purchase": {
+        "visible": true,
+        "bottom": 519,
+        "top": 471
+      },
+      "brokenImages": []
+    },
+    {
+      "name": "product",
+      "title": "GCMT Clean & Care Charcoal Toothpaste",
+      "page": "/product/90a4321f-582f-4463-a136-b1694466ed78",
+      "reducedMotion": false,
+      "width": 640,
+      "documentWidth": 640,
+      "purchase": {
+        "visible": true,
+        "bottom": 555,
+        "top": 507
+      },
+      "brokenImages": []
+    },
+    {
+      "name": "cart",
+      "title": "Your cart",
+      "page": "/cart",
+      "reducedMotion": false,
+      "width": 640,
+      "documentWidth": 640,
+      "brokenImages": []
+    },
+    {
+      "name": "checkout",
+      "title": "Checkout",
+      "page": "/checkout",
+      "reducedMotion": false,
+      "width": 640,
+      "documentWidth": 640,
+      "brokenImages": []
+    },
+    {
+      "name": "auth",
+      "title": "Sign in",
+      "page": "/auth",
+      "reducedMotion": false,
+      "width": 640,
+      "documentWidth": 640,
+      "brokenImages": []
+    }
+  ]
+}

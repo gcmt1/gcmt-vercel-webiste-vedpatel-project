@@ -1,54 +1,27 @@
-/* ====================== GLOBAL ANIMATIONS ====================== */
-
-/* Fade-in page transition for all page-level elements */
-.app-main > * {
-  animation: fadePageIn 0.6s ease-in-out both;
+.gcmt-skip {
+  position: fixed;
+  left: 1rem;
+  top: -8rem;
+  z-index: 9999;
+  background: white;
+  padding: 0.8rem;
+  color: var(--leaf);
 }
-
-@keyframes fadePageIn {
-  from {
-    opacity: 0;
-    transform: translateY(20px);
-  }
-  to {
-    opacity: 1;
-    transform: translateY(0);
-  }
+.gcmt-skip:focus {
+  top: 1rem;
 }
-
-/* Smooth fade on body load */
-body {
-  opacity: 0;
-  animation: fadeBodyIn 0.5s ease-out forwards;
+.gcmt-status {
+  position: fixed;
+  bottom: 12px;
+  left: 12px;
+  z-index: 20;
+  max-width: min(90vw, 400px);
+  display: grid;
+  gap: 6px;
 }
-
-@keyframes fadeBodyIn {
-  to {
-    opacity: 1;
-  }
-}
-
-/* Universal button/link hover interaction */
-a, button {
-  transition: all 0.3s ease;
-}
-a:hover, button:hover {
-  transform: translateY(-2px);
-  opacity: 0.92;
-}
-
-/* Make footer and header fade in slightly slower */
-.app-header, .app-footer {
-  animation: fadeInSlow 0.8s ease-in-out both;
-}
-
-@keyframes fadeInSlow {
-  from {
-    opacity: 0;
-    transform: translateY(-10px);
-  }
-  to {
-    opacity: 1;
-    transform: translateY(0);
-  }
+.gcmt-status > div {
+  background: var(--ink);
+  color: white;
+  border-radius: 8px;
+  padding: 10px 16px;
 }

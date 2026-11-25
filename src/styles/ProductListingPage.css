@@ -1,3 +1,4 @@
+@scope ([data-page="products"]) {
 /* GCMT Herbal Products Homepage - Complete CSS */
 /* Mobile-First Responsive Design */
 
@@ -100,7 +101,7 @@ p {
 .min-h-screen { min-height: 100vh; }
 
 /* Color Variables for Herbal Brand */
-:root {
+:scope {
   --primary-green: #16a34a;
   --primary-green-dark: #15803d;
   --primary-green-light: #22c55e;
@@ -1199,7 +1200,7 @@ a:focus {
 
 /* High Contrast Mode Support */
 @media (prefers-contrast: high) {
-  :root {
+  :scope {
     --neutral-600: #000000;
     --neutral-400: #333333;
     --primary-green: #006600;
@@ -1482,4 +1483,5 @@ input, textarea, button {
   .cta-description {
     font-size: 1.125rem;
   }
+}
 }

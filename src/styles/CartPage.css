@@ -1,7 +1,8 @@
+@scope ([data-page="cart"]) {
 /* Cart Page Professional CSS */
 
 /* Base styles and CSS variables for consistent theming */
-:root {
+:scope {
   --primary-color: #2563eb;
   --primary-hover: #1d4ed8;
   --secondary-color: #64748b;
@@ -792,7 +793,7 @@
 
 /* High contrast mode support */
 @media (prefers-contrast: high) {
-  :root {
+  :scope {
     --border-color: #000000;
     --text-secondary: #000000;
     --shadow-sm: 0 1px 2px 0 rgb(0 0 0 / 0.2);
@@ -851,4 +852,5 @@
   .order-summary {
     position: static;
   }
+}
 }

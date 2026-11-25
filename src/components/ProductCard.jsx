@@ -1,230 +1,254 @@
-import React, { useEffect, useState } from 'react';
-import { supabase } from '../supabaseClient';
-import { useNavigate } from 'react-router-dom';
-import AddToCartButton from './AddToCartButton';
-import { useCart } from '../hooks/useCart';
-import { useToast } from './ToastContext';
-import { Star, ShoppingCart, Eye, Heart, Zap } from 'lucide-react';
-import '../styles/ProductCard.css';
-import DefaultProductImage from '../assets/product.png';
-
-export default function ProductCard({ productId, catalogProduct, hideAddToCart = false }) {
-  const [product, setProduct] = useState(null);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState(null);
-  const [isHovered, setIsHovered] = useState(false);
-  const [isFavorite, setIsFavorite] = useState(false);
-  const [buyNowLoading, setBuyNowLoading] = useState(false);
-  const navigate = useNavigate();
-  const { addToCart } = useCart();
-  const { showToast } = useToast();
-
+import React, { useState, useRef, useEffect } from "react";
+import { Link, useNavigate } from "react-router-dom";
+import { ChevronLeft, ChevronRight, ShoppingBag } from "lucide-react";
+import { useAppContext } from "../AppContext";
+import { useCart } from "../hooks/useCart";
+import {
+  money,
+  packs,
+  photos,
+  pricePaise,
+  quantityLimit,
+} from "../shop/catalog";
+import { createIntent } from "../shop/intent";
+import { Button } from "./ui";
+import QuantitySelector from "./QuantitySelector";
+import s from "./shop.module.css";
+export default function ProductCard({
+  product,
+  detail = false,
+  heading = "h1",
+}) {
+  const images = photos(product),
+    options = packs(product),
+    [index, setIndex] = useState(0),
+    [size, setSize] = useState(options.length === 1 ? options[0] : ""),
+    [qty, setQty] = useState(1),
+    [note, setNote] = useState(""),
+    [broken, setBroken] = useState(false);
+  const nav = useNavigate(),
+    { user, startingGuest } = useAppContext(),
+    { addToCart, loading } = useCart(),
+    field = useRef(null);
+  const actions = useRef(null),
+    [showBar, setShowBar] = useState(false);
   useEffect(() => {
-    async function fetchProduct() {
-      setLoading(true);
-      const { data, error } = catalogProduct ? {data:catalogProduct} : await supabase
-        .from('products')
-        .select('*')
-        .eq('id', productId)
-        .single();
-
-      if (error) {
-        console.error('Error fetching product:', error.message);
-        setError('Could not load product.');
-      } else {
-        let imageUrl = DefaultProductImage;
-        if (data.product_image) {
-          const first = String(data.product_image).split(',')[0].trim();
-          if (first.startsWith('/') && !first.startsWith('//')) imageUrl=first;
-          else if (/^https?:\/\//i.test(first)) imageUrl = first;
-          else if (first) {
-            const {data:imageData} = supabase.storage.from('product-image').getPublicUrl(first);
-            imageUrl=imageData?.publicUrl || DefaultProductImage;
-          }
-        }
-
-        const productData = {
-          id: data.id,
-          name: data.product_name,
-          shortDescription: data.product_sub_description,
-          price: Number(data.product_price).toFixed(2),
-          discount: data.product_discount ? `${data.product_discount}%` : null,
-          discountPrice: data.product_discount
-            ? (data.product_price * (1 - data.product_discount / 100)).toFixed(2)
-            : null,
-          image: imageUrl,
-          category: data.category,
-          hasSizes: Boolean(data.size?.trim()),
-          rating: Number(data.rating),
-          inStock: data.in_stock !== false && (data.stock == null || data.stock > 0),
-        };
-        setProduct(productData);
-      }
-      setLoading(false);
+    if (!detail || !actions.current) return;
+    const footer = document.querySelector("footer");
+    const update = () => {
+      const pastActions = actions.current?.getBoundingClientRect().bottom < 0;
+      const beforeFooter =
+        !footer || footer.getBoundingClientRect().top >= window.innerHeight;
+      setShowBar(pastActions && beforeFooter);
+    };
+    const observer = new IntersectionObserver(update);
+    if (footer) observer.observe(footer);
+    observer.observe(actions.current);
+    return () => observer.disconnect();
+  }, [detail]);
+  const price = pricePaise(product),
+    Heading = heading,
+    href = "/product/" + product.id;
+  function selectImage(next) {
+    setIndex(next);
+    setBroken(false);
+  }
+  const navigating = useRef(false);
+  function buy() {
+    if (navigating.current) return;
+    if (options.length && !size) {
+      setNote("Choose a pack size first.");
+      field.current?.focus();
+      return;
     }
-
-    fetchProduct();
-  }, [productId,catalogProduct]);
-
-  const handleCardClick = () => {
-    navigate(`/product/${productId}`);
-  };
-
-  const toggleFavorite = (e) => {
-    e.stopPropagation();
-    setIsFavorite(!isFavorite);
-  };
-
-  const handleQuickView = (e) => {
-    e.stopPropagation();
-    navigate(`/product/${productId}`);
-  };
-
-  // Buy Now: adds the product straight to the cart and takes the
-  // customer directly to checkout, skipping an extra "view cart" step.
-  const handleBuyNow = async (e) => {
-    e.stopPropagation();
-    if (!product?.inStock || buyNowLoading) return;
-
-    if (product.hasSizes) { navigate(`/product/${productId}`); return; }
-    setBuyNowLoading(true);
-    const success = await addToCart(product.id, 1);
-    setBuyNowLoading(false);
-
-    if (success) {
-      navigate('/checkout');
-    } else {
-      showToast('❌ Could not start checkout. Please try again.', 'error');
+    try {
+      const id = createIntent(sessionStorage, user?.id, product, size, qty);
+      navigating.current = true;
+      nav("/checkout?buy=" + id);
+    } catch {
+      setNote(
+        "Unable to open the purchase review. Check the session and try again.",
+      );
     }
-  };
-
-  if (loading) {
-    return (
-      <div className="product-card product-card--skeleton">
-        <div className="product-card__skeleton-image"></div>
-        <div className="product-card__skeleton-content">
-          <div className="product-card__skeleton-title"></div>
-          <div className="product-card__skeleton-text"></div>
-          <div className="product-card__skeleton-price"></div>
-        </div>
-      </div>
+  }
+  async function save() {
+    const ok = await addToCart(product.id, qty);
+    setNote(
+      ok
+        ? "Saved to cart."
+        : "Could not save this item. Check your cart before retrying.",
     );
   }
-
-  if (error) {
-    return <div className="product-card product-card--error">{error}</div>;
-  }
-
   return (
-    <div 
-      className="product-card"
-      onMouseEnter={() => setIsHovered(true)}
-      onMouseLeave={() => setIsHovered(false)}
-    >
-      <div className="product-card__inner" onClick={handleCardClick}>
-        <div className="product-card__image-container">
-          <img
-            src={product.image}
-            alt={product.name}
-            className="product-card__image"
-            onError={(e) => {
-              if (e.currentTarget.getAttribute('src') !== DefaultProductImage) e.currentTarget.src = DefaultProductImage;
-            }}
-          />
-
-          {product.discount && (
-            <div className="product-card__discount-badge">-{product.discount} OFF</div>
+    <article className={detail ? `${s.panel} ${s.detailPanel}` : s.panel}>
+      <div className={s.media}>
+        <div className={s.stage}>
+          {images[index] && !broken ? (
+            <img
+              src={images[index]}
+              alt={product.product_name + " · photo " + (index + 1)}
+              fetchPriority="high"
+              onError={() => setBroken(true)}
+            />
+          ) : (
+            <p>Product photo unavailable</p>
           )}
-
-          {!product.inStock && (
-            <div className="product-card__out-of-stock-overlay">
-              <span>Out of Stock</span>
-            </div>
-          )}
-
-          <div className={`product-card__actions ${isHovered ? 'product-card__actions--show' : ''}`}>
-            <button 
-              className="product-card__action-btn product-card__quick-view-btn" 
-              onClick={handleQuickView}
-              aria-label="Quick view"
-            >
-              <Eye size={18} />
-            </button>
-            <button 
-              className={`product-card__action-btn product-card__favorite-btn ${isFavorite ? 'product-card__favorite--active' : ''}`} 
-              onClick={toggleFavorite}
-              aria-label="Add to favorites"
-            >
-              <Heart size={18} />
-            </button>
-          </div>
         </div>
-
-        <div className="product-card__info">
-          {product.category && (
-            <div className="product-card__category">{product.category}</div>
-          )}
-
-          <h3 className="product-card__name">{product.name}</h3>
-
-          {product.rating > 0 && product.rating <= 5 && <div className="product-card__rating">
-            <div className="product-card__stars">
-              {[...Array(5)].map((_, i) => (
-                <Star 
-                  key={i} 
-                  size={14} 
-                  className={i < Math.floor(product.rating) ? 'product-card__star--filled' : 'product-card__star--empty'} 
-                  fill={i < Math.floor(product.rating) ? "#FFB800" : "none"}
-                  stroke={i < Math.floor(product.rating) ? "#FFB800" : "#CBD5E0"}
-                />
-              ))}
-            </div>
-            <span className="product-card__rating-value">{product.rating}</span>
-          </div>}
-
-          {product.shortDescription && (
-            <p className="product-card__description">{product.shortDescription}</p>
-          )}
-
-          <div className="product-card__price-container">
-            {product.discountPrice ? (
-              <>
-                <span className="product-card__price--current">₹{product.discountPrice}</span>
-                <span className="product-card__price--original">₹{product.price}</span>
-              </>
-            ) : (
-              <span className="product-card__price--current">₹{product.price}</span>
-            )}
-          </div>
-        </div>
-      </div>
-
-      <div className="product-card__footer" onClick={(e) => e.stopPropagation()}>
-        <div className={`product-card__button-group ${hideAddToCart ? 'product-card__button-group--single' : ''}`}>
-          {!hideAddToCart && !product.hasSizes && (
-            <AddToCartButton 
-              productId={product.id} 
-              quantity={1} 
-              disabled={!product.inStock}
-              className="product-card__add-to-cart-btn"
-            >
-              <ShoppingCart size={16} />
-              <span>{product.inStock ? 'Add to Cart' : 'Out of Stock'}</span>
-            </AddToCartButton>
-          )}
-
-          <button
-            type="button"
-            className="product-card__buy-now-btn"
-            onClick={handleBuyNow}
-            disabled={!product.inStock || buyNowLoading}
-            aria-label="Buy now"
+        {detail && images.length > 1 && (
+          <div
+            className={s.thumbnails}
+            role="group"
+            aria-label="Product photos"
           >
-            <Zap size={16} />
-            <span>{buyNowLoading ? 'Processing...' : 'Buy Now'}</span>
-          </button>
+            {images.map((url, i) => (
+              <button
+                key={i}
+                type="button"
+                aria-label={`Show product photo ${i + 1}`}
+                aria-pressed={i === index}
+                onClick={() => selectImage(i)}
+              >
+                <span aria-hidden="true">{i + 1}</span>
+                <img
+                  src={url}
+                  alt=""
+                  onError={(e) => {
+                    e.currentTarget.hidden = true;
+                  }}
+                />
+              </button>
+            ))}
+          </div>
+        )}
+        {images.length > 1 && (
+          <div className={s.pager}>
+            <button
+              aria-label="Previous product photo"
+              onClick={() =>
+                selectImage((index + images.length - 1) % images.length)
+              }
+            >
+              <ChevronLeft size={18} />
+            </button>
+            <span>
+              {index + 1} / {images.length}
+            </span>
+            <button
+              aria-label="Next product photo"
+              onClick={() => selectImage((index + 1) % images.length)}
+            >
+              <ChevronRight size={18} />
+            </button>
+          </div>
+        )}
+      </div>
+      <div className={s.purchase}>
+        <Heading>
+          {detail ? (
+            product.product_name
+          ) : (
+            <Link to={href}>{product.product_name}</Link>
+          )}
+        </Heading>
+        <div className={s.price}>
+          {money(price)}{" "}
+          {Number(product.product_discount) > 0 && price != null && (
+            <del>{money(Math.round(Number(product.product_price) * 100))}</del>
+          )}
+        </div>
+        {product.product_sub_description && (
+          <p className={s.description}>{product.product_sub_description}</p>
+        )}
+        <div className={s.selectors}>
+          {options.length > 0 && (
+            <label>
+              Pack size
+              <select
+                ref={field}
+                value={size}
+                onChange={(e) => {
+                  setSize(e.target.value);
+                  setNote("");
+                }}
+              >
+                {options.length > 1 && <option value="">Choose size</option>}
+                {options.map((o) => (
+                  <option key={o}>{o}</option>
+                ))}
+              </select>
+            </label>
+          )}
+          {detail && (
+            <div>
+              <span className={s.quantityLabel}>Quantity</span>
+              <QuantitySelector
+                name={product.product_name}
+                value={qty}
+                max={quantityLimit(product)}
+                onChange={setQty}
+              />
+            </div>
+          )}
+        </div>
+        {quantityLimit(product) === 0 && <p>Currently unavailable</p>}
+        <div className={s.actions} ref={actions}>
+          <Button
+            onClick={buy}
+            disabled={
+              !user ||
+              startingGuest ||
+              price == null ||
+              !Number.isSafeInteger(qty) ||
+              qty < 1 ||
+              qty > quantityLimit(product)
+            }
+          >
+            Buy Now
+          </Button>
+          <Button
+            secondary
+            disabled={
+              !user ||
+              loading ||
+              options.length > 1 ||
+              !Number.isSafeInteger(qty) ||
+              qty < 1 ||
+              qty > quantityLimit(product)
+            }
+            onClick={save}
+          >
+            {detail && <ShoppingBag size={17} aria-hidden="true" />} Add to Cart
+          </Button>
+        </div>
+        {options.length > 1 && (
+          <small>Choose Buy Now to order a specific pack.</small>
+        )}
+        <p role="status">{note}</p>
+        <div className={s.links}>
+          {!detail && <Link to={href}>Product details</Link>}
+          <Link to="/terms-and-conditions">Delivery &amp; replacements</Link>
         </div>
       </div>
-    </div>
+      {detail && showBar && (
+        <div className={s.sticky}>
+          <span>
+            {money(price)} · {size || "Choose pack"}
+          </span>
+          <Button
+            onClick={buy}
+            disabled={
+              !user ||
+              startingGuest ||
+              price == null ||
+              !Number.isSafeInteger(qty) ||
+              qty < 1 ||
+              qty > quantityLimit(product)
+            }
+          >
+            Buy Now
+          </Button>
+        </div>
+      )}
+    </article>
   );
 }

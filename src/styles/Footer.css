@@ -1,7 +1,8 @@
+@scope ([data-ui="footer"]) {
 /* Professional E-commerce Footer Styles */
 /* Enhanced readability, visual appeal, and professional design */
 
-:root {
+:scope {
   --footer-primary: #1e5128;
   --footer-secondary: #2d5a3d;
   --footer-accent: #10b981;
@@ -612,7 +613,7 @@
 
 /* High Contrast Mode */
 @media (prefers-contrast: high) {
-  :root {
+  :scope {
     --footer-primary: #000000;
     --footer-secondary: #1a1a1a;
     --footer-accent: #ffffff;
@@ -631,7 +632,7 @@
 
 /* Dark Mode Support */
 @media (prefers-color-scheme: dark) {
-  :root {
+  :scope {
     --footer-shadow: rgba(0, 0, 0, 0.3);
   }
 }
@@ -655,4 +656,5 @@
     background: none !important;
     border: 1px solid #000000 !important;
   }
+}
 }

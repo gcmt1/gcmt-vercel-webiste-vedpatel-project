@@ -1,9 +1,10 @@
+@scope ([data-ui="navbar"]) {
 /* =================================================================
    GCMT E-commerce Navbar - Professional & Fully Responsive
    ================================================================= */
 
 /* CSS Custom Properties for easy theming */
-:root {
+:scope {
   --navbar-height: 70px;
   --navbar-height-mobile: 60px;
   --primary-color: #2563eb;
@@ -706,3 +707,4 @@
 /* =================================================================
    Dark Mode Support (Optional)
    ================================================================= */
+}
